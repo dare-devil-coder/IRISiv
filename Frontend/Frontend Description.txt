@@ -1,0 +1,1314 @@
+Absolutely. I would give **Person 1 a proper project specification**, not just "build the frontend." That way there is no confusion about what they own, what they should build, and what they should **not** touch.
+
+Below is a **copy-paste-ready task description** you can send directly to Person 1.
+
+---
+
+# IRISiv — Frontend Developer Complete Task Specification
+
+## 1. Your Role
+
+You are responsible for building the **entire frontend/UI of IRISiv**.
+
+Your responsibility is to create a **professional, responsive, production-style web application** through which the three main users of IRISiv can interact with the platform:
+
+1. **NGO**
+2. **Corporate**
+3. **Business/Vendor**
+
+The frontend must represent the complete IRISiv CSR lifecycle:
+
+> **NGO Need → CSR Project → Corporate Approval → Business Proposals → AI Evaluation → Business Selection → Contract → Advance Payment → Project Execution → Delivery → NGO Verification → AI Verification → Final Payment → Impact Report**
+
+This lifecycle is the core workflow of the project. 
+
+---
+
+# 2. Your Main Objective
+
+Your goal is **not just to create attractive dashboards**.
+
+The frontend must make the entire IRISiv workflow understandable and usable.
+
+A judge should be able to open the application and understand:
+
+> **Who is doing what, what stage the CSR project is currently in, what happened previously, and what needs to happen next.**
+
+The UI should therefore make the **project lifecycle extremely clear**.
+
+---
+
+# 3. Technology Requirements
+
+Use:
+
+* **Next.js**
+* **TypeScript**
+* **Tailwind CSS**
+* **shadcn/ui**
+* **Lucide React**
+* **Framer Motion** where animation genuinely improves UX
+
+Do not introduce another frontend framework without discussing it with the team.
+
+---
+
+# 4. Important Architecture Rule
+
+You are the **frontend developer**.
+
+Therefore:
+
+### You ARE responsible for:
+
+* Pages
+* Components
+* Layout
+* Navigation
+* Forms
+* Tables
+* Cards
+* Modals
+* Dialogs
+* Charts/UI
+* Loading states
+* Error states
+* Empty states
+* Responsive design
+* API integration from frontend
+* Frontend validation
+* User experience
+
+### You are NOT responsible for:
+
+* Database schema design
+* PostgreSQL migrations
+* RLS policies
+* Backend business logic
+* AI model implementation
+* Payment infrastructure
+* Server-side authorization logic
+
+Those belong to other team members.
+
+You should consume the APIs provided by the backend developer.
+
+---
+
+# 5. Overall Application Structure
+
+The application should have:
+
+```text
+IRISiv
+│
+├── Authentication
+│
+├── NGO Application
+│
+├── Corporate Application
+│
+├── Business Application
+│
+└── Shared Project / Lifecycle Components
+```
+
+The same project should be represented consistently across all three dashboards.
+
+---
+
+# 6. Authentication UI
+
+Create:
+
+### `/login`
+
+Features:
+
+* Email
+* Password
+* Login
+* Forgot password
+* Remember session
+* Error handling
+* Loading state
+
+### `/signup`
+
+The user should select their role:
+
+```text
+I am a:
+
+○ NGO
+○ Corporate
+○ Business
+```
+
+After authentication, redirect them to the correct dashboard.
+
+Example:
+
+```text
+NGO       → /ngo/dashboard
+Corporate → /corporate/dashboard
+Business  → /business/dashboard
+```
+
+Do not rely only on frontend role selection for security. Backend/database permissions will handle actual authorization.
+
+---
+
+# 7. Common Application Shell
+
+Build a reusable application shell.
+
+It should include:
+
+```text
+┌────────────────────────────────────────────┐
+│ IRISiv                         🔔  Profile │
+├──────────────┬─────────────────────────────┤
+│              │                             │
+│ Sidebar      │       Page Content          │
+│              │                             │
+│ Dashboard    │                             │
+│ Projects     │                             │
+│ ...          │                             │
+│              │                             │
+└──────────────┴─────────────────────────────┘
+```
+
+The sidebar should change according to the user's role.
+
+---
+
+# 8. NGO Dashboard
+
+Create:
+
+### `/ngo/dashboard`
+
+The NGO dashboard should answer:
+
+> **"What requirements have I created, what projects are active, and what deliveries need my attention?"**
+
+Include:
+
+### Overview cards
+
+```text
+Active Projects
+Pending Requirements
+Pending Verifications
+Completed Projects
+```
+
+### Recent Projects
+
+Show:
+
+* Project name
+* Corporate
+* Business
+* Budget
+* Beneficiaries
+* Status
+* Deadline
+
+### Pending Actions
+
+For example:
+
+```text
+⚠ Delivery verification pending
+⚠ Requirement awaiting approval
+✓ Project completed
+```
+
+---
+
+# 9. NGO Requirement Creation
+
+Create:
+
+### `/ngo/requirements/new`
+
+Form:
+
+```text
+Project Title
+CSR Category
+Location
+Number of Beneficiaries
+Requirement
+Estimated Budget
+Deadline
+Description
+```
+
+Buttons:
+
+```text
+Save Draft
+Submit Requirement
+```
+
+The form must have:
+
+* Proper validation
+* Error messages
+* Loading state
+* Success state
+* Confirmation dialog before submission
+
+---
+
+# 10. NGO Requirements Page
+
+Create:
+
+### `/ngo/requirements`
+
+Display:
+
+```text
+Requirement
+Category
+Budget
+Beneficiaries
+Date
+Status
+Actions
+```
+
+Statuses should visually distinguish:
+
+```text
+Draft
+Submitted
+CSR Approved
+Rejected
+Published
+```
+
+Do not invent additional business states without discussing them with the backend developer.
+
+---
+
+# 11. NGO Project Page
+
+Create:
+
+### `/ngo/projects`
+
+and:
+
+### `/ngo/projects/[projectId]`
+
+This is extremely important.
+
+The project page should contain:
+
+### Project Overview
+
+```text
+Project Name
+Project ID
+NGO
+Corporate
+Business
+Budget
+Beneficiaries
+Deadline
+Current Status
+```
+
+---
+
+# 12. Project Lifecycle Timeline
+
+Every project should have a reusable visual timeline.
+
+Example:
+
+```text
+✓ Requirement
+│
+✓ CSR Approved
+│
+✓ Opportunity Published
+│
+✓ Business Selected
+│
+● In Progress
+│
+○ Delivery
+│
+○ NGO Verification
+│
+○ AI Verification
+│
+○ Final Payment
+│
+○ Completed
+```
+
+The active stage should be visually obvious.
+
+This component should be reusable across NGO, Corporate and Business dashboards.
+
+---
+
+# 13. Corporate Dashboard
+
+Create:
+
+### `/corporate/dashboard`
+
+The corporate dashboard should answer:
+
+> **"Where is my CSR money going, what projects require my decision, and what impact has been achieved?"**
+
+Include:
+
+### KPI cards
+
+```text
+Total CSR Budget
+Allocated Amount
+Active Projects
+Total Beneficiaries
+Completed Projects
+```
+
+### Pending Approvals
+
+Show projects waiting for corporate action.
+
+Example:
+
+```text
+School Kit Distribution
+
+NGO: XYZ Foundation
+Beneficiaries: 500
+Budget: ₹50,000
+
+[View]
+[Approve]
+```
+
+---
+
+# 14. Corporate CSR Projects
+
+Create:
+
+### `/corporate/projects`
+
+Show:
+
+* Project
+* NGO
+* Budget
+* Business
+* Current stage
+* Delivery progress
+* Verification status
+* Payment status
+
+The corporate must be able to click a project and see the complete lifecycle.
+
+---
+
+# 15. Corporate Proposal Comparison UI
+
+Create a page/component for:
+
+### `/corporate/projects/[projectId]/proposals`
+
+Show all submitted business proposals.
+
+Example:
+
+|          | Business A | Business B | Business C |
+| -------- | ---------: | ---------: | ---------: |
+| Price    |       ₹55K |       ₹50K |       ₹47K |
+| Timeline |    10 days |     7 days |    20 days |
+| Capacity |        600 |        800 |        500 |
+| AI Score |         82 |     **93** |         77 |
+
+Highlight the AI recommendation.
+
+For example:
+
+> ⭐ **AI Recommended: Business B**
+
+The frontend should display the AI's scores and reasoning received from the backend/AI service.
+
+Do **not** make the frontend itself decide which business wins.
+
+---
+
+# 16. Corporate Business Selection
+
+Provide:
+
+```text
+[View Proposal]
+[Select Business]
+```
+
+Before selection:
+
+> "Are you sure you want to select Business B for this CSR project?"
+
+After success:
+
+```text
+✓ Business selected successfully
+```
+
+The frontend should then refresh the project lifecycle.
+
+---
+
+# 17. Corporate Payment UI
+
+Create a payment/milestone section.
+
+For the hackathon, use the project's defined simulated payment workflow:
+
+```text
+Contract Value
+₹50,000
+
+Advance
+₹15,000 — 30%
+
+Remaining
+₹35,000 — 70%
+```
+
+The project document explicitly recommends simulating the payment process for the hackathon rather than actually moving funds. 
+
+Display:
+
+```text
+✓ Contract Created
+✓ Advance Payment
+✓ Delivery
+✓ NGO Verification
+● Final Payment
+○ Completed
+```
+
+The frontend should only display and trigger backend payment-state actions.
+
+---
+
+# 18. Business Dashboard
+
+Create:
+
+### `/business/dashboard`
+
+The business dashboard should answer:
+
+> **"What CSR opportunities are available to me, what proposals have I submitted, and what projects do I need to execute?"**
+
+Include:
+
+```text
+Available Opportunities
+My Proposals
+Active Projects
+Pending Deliveries
+Payments
+```
+
+---
+
+# 19. Business Opportunities
+
+Create:
+
+### `/business/opportunities`
+
+Each opportunity card should show:
+
+```text
+Project Name
+Category
+Location
+Beneficiaries
+Budget
+Deadline
+NGO
+```
+
+Example:
+
+```text
+School Kit Distribution
+
+500 beneficiaries
+₹50,000
+Rajkot
+Deadline: 30 Aug
+
+[View Opportunity]
+```
+
+---
+
+# 20. Business Proposal Submission
+
+Create:
+
+### `/business/opportunities/[projectId]`
+
+Show complete project requirements.
+
+Then:
+
+```text
+Bid Amount
+Delivery Timeline
+Capacity
+Relevant Experience
+Proposal Description
+```
+
+Button:
+
+> **Submit Proposal**
+
+After submission:
+
+```text
+✓ Proposal Submitted
+Status: Under Evaluation
+```
+
+---
+
+# 21. Business Proposal Tracking
+
+Create:
+
+### `/business/proposals`
+
+Show:
+
+```text
+Project
+Bid
+Submitted Date
+AI Evaluation Status
+Corporate Decision
+Status
+```
+
+Statuses:
+
+```text
+Submitted
+Under Evaluation
+Selected
+Rejected
+```
+
+---
+
+# 22. Business Active Project
+
+Create:
+
+### `/business/projects/[projectId]`
+
+Show:
+
+```text
+Project
+Contract Value
+Advance Payment
+Deadline
+Milestones
+Current Status
+```
+
+Include a clear:
+
+> **Start Project**
+
+action when the backend says the project is ready.
+
+---
+
+# 23. Business Delivery Submission
+
+Create:
+
+### `/business/projects/[projectId]/delivery`
+
+Form:
+
+```text
+Quantity Delivered
+Delivery Date
+Quality
+Comments
+```
+
+Evidence:
+
+```text
+Upload Invoice
+Upload Delivery Receipt
+Upload Photos
+Upload Supporting Documents
+```
+
+The project specification explicitly includes delivery receipts, invoices, photos, quantity confirmation and authorized NGO confirmation as evidence types. 
+
+Show upload progress.
+
+After submission:
+
+```text
+✓ Delivery submitted
+Waiting for NGO verification
+```
+
+---
+
+# 24. NGO Verification UI
+
+Create a dedicated verification interface.
+
+Example:
+
+```text
+DELIVERY VERIFICATION
+
+Requested Quantity
+500
+
+Received Quantity
+500
+
+Delivery Date
+28 Aug
+
+Quality
+Good
+
+Packaging
+Acceptable
+```
+
+Evidence preview:
+
+```text
+📄 Invoice
+📄 Delivery Receipt
+📷 Photo
+📷 Photo
+```
+
+Then:
+
+```text
+[Confirm Delivery]
+[Report Issue]
+```
+
+The NGO confirmation should remain a **human action**.
+
+---
+
+# 25. AI Verification Screen
+
+This is one of the **most important frontend screens in the entire application**.
+
+Create a highly polished component:
+
+### `AIVerificationResult`
+
+Example:
+
+```text
+┌──────────────────────────────────────┐
+│       AI VERIFICATION ENGINE         │
+├──────────────────────────────────────┤
+│                                      │
+│ Requested Quantity       500     ✓   │
+│ Received Quantity        500     ✓   │
+│ Quantity Match           100%    ✓   │
+│ Delivery Timeline        On Time ✓   │
+│ Quality                  Good    ✓   │
+│ Documentation            Complete✓   │
+│                                      │
+│ ──────────────────────────────────── │
+│                                      │
+│ VERIFICATION RESULT                  │
+│                                      │
+│ 🟢 LIKELY FULFILLED                  │
+│                                      │
+│ Confidence               96%         │
+│ Completion               100%        │
+│ Issues Detected          None        │
+└──────────────────────────────────────┘
+```
+
+The document provides this type of AI verification output. 
+
+---
+
+# 26. AI Failure/Mismatch UI
+
+You MUST support a failure state.
+
+Example:
+
+```text
+⚠ QUANTITY MISMATCH
+
+Expected
+1,000
+
+Received
+950
+
+Shortfall
+50
+
+Shortfall Percentage
+5%
+
+Recommendation
+MANUAL REVIEW REQUIRED
+```
+
+This is important because the project isn't supposed to blindly approve every delivery.
+
+Your source material specifically gives the 1,000 vs 950 example and recommends manual review. 
+
+---
+
+# 27. Corporate Verification Result
+
+The corporate should see:
+
+```text
+Project #CSR-1024
+
+NGO Confirmation        ✓
+Platform Validation     ✓
+AI Verification        ✓
+
+Requested               500
+Delivered               500
+Completion              100%
+
+Evidence
+4 Documents
+3 Images
+
+Final Payment
+₹35,000
+
+[Approve Final Payment]
+```
+
+This is where the corporate makes the final decision.
+
+The AI result should **not** be presented as an automatic payment decision. The project documentation explicitly says AI should act as a verification assistant rather than the final authority. 
+
+---
+
+# 28. Impact Report UI
+
+Create:
+
+### `/corporate/reports/[projectId]`
+
+Display:
+
+```text
+CSR IMPACT REPORT
+
+Project #CSR-1024
+
+₹50,000
+Project Value
+
+500
+Beneficiaries
+
+500 / 500
+Delivered
+
+100%
+Completion
+
+✓ NGO Verified
+✓ Evidence Available
+✓ AI Verified
+✓ Project Completed
+```
+
+Include:
+
+### Impact Summary
+
+A readable AI-generated summary.
+
+The document's example shows the corporate ultimately receiving project completion, payment, beneficiary, delivery and evidence information. 
+
+---
+
+# 29. Corporate Analytics
+
+Create:
+
+### `/corporate/analytics`
+
+Show useful—not decorative—analytics.
+
+For example:
+
+```text
+Total CSR Funds
+₹10,00,000
+
+Projects
+12
+
+Beneficiaries
+4,250
+
+Completed
+8
+
+In Progress
+3
+
+Needs Attention
+1
+```
+
+Charts can include:
+
+* CSR funds by category
+* Project completion
+* Beneficiaries impacted
+* Verification outcomes
+* Project status distribution
+
+Don't create charts just for visual decoration.
+
+---
+
+# 30. Notifications
+
+Create a reusable notification system.
+
+Examples:
+
+### NGO
+
+> Delivery submitted for CSR-1024. Verification required.
+
+### Business
+
+> Your proposal for CSR-1024 was selected.
+
+### Corporate
+
+> AI verification completed for CSR-1024. Final payment requires approval.
+
+---
+
+# 31. Global Project Status System
+
+Create reusable components:
+
+### `ProjectStatusBadge`
+
+### `ProjectTimeline`
+
+### `PaymentStatus`
+
+### `VerificationStatus`
+
+### `DeliveryProgress`
+
+These should consume backend status values.
+
+Example:
+
+```text
+status = "AI_VERIFIED"
+```
+
+Frontend decides how to visually represent it.
+
+But frontend should **not create its own independent status system**.
+
+---
+
+# 32. Loading, Error and Empty States
+
+Every API-driven page needs:
+
+### Loading
+
+```text
+Skeleton cards
+Skeleton tables
+Loading indicators
+```
+
+### Error
+
+```text
+Something went wrong.
+
+[Try Again]
+```
+
+### Empty
+
+```text
+No proposals submitted yet.
+
+Once businesses submit proposals,
+they will appear here.
+```
+
+Do not leave blank white screens.
+
+---
+
+# 33. Responsive Design
+
+The application must work on:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+However, prioritize **desktop/laptop first**, because the hackathon demonstration will most likely happen on a laptop/projector.
+
+---
+
+# 34. Design Direction
+
+IRISiv should feel like a **serious B2B/fintech/impact platform**, not a student CRUD application.
+
+Use:
+
+* Clean typography
+* Strong hierarchy
+* Professional cards
+* Consistent spacing
+* Clear status colors
+* Minimal but meaningful animation
+* Excellent tables
+* Strong data visualization
+* Clear CTAs
+
+Avoid:
+
+* Excessive gradients
+* Excessive glassmorphism
+* Random animations
+* Huge decorative elements
+* Overloaded dashboards
+* Unnecessary 3D effects
+
+The UI should communicate:
+
+> **Trust + Transparency + Intelligence + Accountability**
+
+---
+
+# 35. Most Important UI Component: Project Lifecycle
+
+Build this as a reusable component from the beginning.
+
+For example:
+
+```text
+Requirement
+    ↓
+CSR Approved
+    ↓
+Published
+    ↓
+Proposals
+    ↓
+Business Selected
+    ↓
+Contract
+    ↓
+Advance Paid
+    ↓
+Execution
+    ↓
+Delivery
+    ↓
+NGO Verified
+    ↓
+AI Verified
+    ↓
+Final Payment
+    ↓
+Completed
+    ↓
+Impact Report
+```
+
+This component is central to explaining IRISiv to judges because the project is fundamentally a complete CSR execution lifecycle. 
+
+---
+
+# 36. Frontend API Contract
+
+You should work closely with the backend developer.
+
+Do **not** invent API responses independently.
+
+Ask the backend developer to provide contracts such as:
+
+```text
+GET /api/projects/:id
+```
+
+Response:
+
+```json
+{
+  "id": "CSR-1024",
+  "title": "School Kit Distribution",
+  "status": "IN_PROGRESS",
+  "budget": 50000,
+  "beneficiaries": 500,
+  "ngo": {},
+  "corporate": {},
+  "business": {}
+}
+```
+
+Your frontend consumes this.
+
+If the backend changes the response structure, communicate before changing your frontend.
+
+---
+
+# 37. Shared TypeScript Types
+
+Create/use shared types such as:
+
+```text
+Project
+Proposal
+Business
+NGO
+Corporate
+Delivery
+Evidence
+Payment
+VerificationResult
+ImpactReport
+Notification
+```
+
+Do not duplicate different definitions of the same object throughout the frontend.
+
+---
+
+# 38. What you must NOT do
+
+### ❌ Don't create fake backend logic inside React.
+
+### ❌ Don't hardcode project statuses.
+
+### ❌ Don't hardcode AI results inside UI components.
+
+### ❌ Don't directly modify Supabase tables.
+
+### ❌ Don't create your own database schema.
+
+### ❌ Don't implement payment logic.
+
+### ❌ Don't make AI decisions in frontend.
+
+### ❌ Don't create a separate data model from the backend.
+
+### ❌ Don't push directly to `main`.
+
+---
+
+# 39. What you ARE allowed to mock temporarily
+
+During development, you can temporarily use mock data such as:
+
+```text
+mockProjects
+mockProposals
+mockBusinesses
+```
+
+**BUT:**
+
+Keep the mock data behind a clear service/interface so it can later be replaced with real APIs.
+
+For example:
+
+```text
+projectService.getProject()
+```
+
+rather than:
+
+```text
+const project = {
+   title: "School Kit Distribution"
+}
+```
+
+inside the page component.
+
+---
+
+# 40. Definition of Done
+
+Your frontend work is considered complete only when:
+
+### Authentication
+
+* [ ] Login
+* [ ] Signup
+* [ ] Role-based routing
+
+### NGO
+
+* [ ] Dashboard
+* [ ] Requirements
+* [ ] Create requirement
+* [ ] Projects
+* [ ] Project details
+* [ ] Delivery verification
+* [ ] Evidence
+
+### Corporate
+
+* [ ] Dashboard
+* [ ] CSR projects
+* [ ] Project details
+* [ ] Proposal comparison
+* [ ] Business selection
+* [ ] Payment UI
+* [ ] Verification results
+* [ ] Analytics
+* [ ] Impact report
+
+### Business
+
+* [ ] Dashboard
+* [ ] Opportunities
+* [ ] Opportunity details
+* [ ] Proposal submission
+* [ ] Proposal tracking
+* [ ] Active projects
+* [ ] Delivery submission
+* [ ] Evidence upload
+* [ ] Payment status
+
+### Shared
+
+* [ ] Project lifecycle
+* [ ] Status badges
+* [ ] Notifications
+* [ ] Loading states
+* [ ] Error states
+* [ ] Empty states
+* [ ] Responsive UI
+* [ ] Consistent design system
+
+---
+
+# 41. Your final frontend demo must support this exact journey
+
+When the frontend is complete, I should be able to demonstrate:
+
+```text
+NGO LOGIN
+   ↓
+Create Requirement
+   ↓
+CORPORATE LOGIN
+   ↓
+Approve CSR Project
+   ↓
+BUSINESS LOGIN
+   ↓
+View Opportunity
+   ↓
+Submit Proposal
+   ↓
+CORPORATE LOGIN
+   ↓
+Compare Proposals
+   ↓
+See AI Recommendation
+   ↓
+Select Business
+   ↓
+BUSINESS LOGIN
+   ↓
+Start Project
+   ↓
+Submit Delivery + Evidence
+   ↓
+NGO LOGIN
+   ↓
+Verify Delivery
+   ↓
+AI Verification Screen
+   ↓
+CORPORATE LOGIN
+   ↓
+Review Verification
+   ↓
+Approve Final Payment
+   ↓
+Impact Report
+```
+
+If you can successfully walk through **that entire journey from the frontend**, then your frontend is doing its job.
+
+---
+
+# 🔥 The most important instruction to Person 1
+
+Tell them this:
+
+> **"Don't think of this as building three dashboards. You are building the visual interface of one complete CSR lifecycle. Every screen must connect to the same project and clearly show what happened before, what is happening now, and what happens next."**
+
+The frontend should make the IRISiv story obvious **without you needing to explain every screen verbally**.
+
+The underlying workflow is the one we've finalized from the project document: NGO need → CSR project → corporate approval/funding → business proposals → AI evaluation → business selection → execution → NGO evidence/verification → AI verification → final payment → impact report. 
+
+### **In short: Person 1 owns everything from `User clicks something` → `User sees the result`.**
+
+Backend owns **what happens behind that click**.
+Database owns **where the data lives**.
+You own **AI + advanced integration**.
+
+That separation will keep the team clean and prevent the classic hackathon problem where everyone edits the same files and nobody knows what belongs to whom.

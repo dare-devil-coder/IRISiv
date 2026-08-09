@@ -1,0 +1,1755 @@
+Absolutely. Since Person 2 owns the **backend**, I would give them a specification that is much more than “build some APIs.” Their job is to create the **actual operational engine of IRISiv** behind the frontend.
+
+The backend must implement the finalized lifecycle: NGO requirement → corporate approval → opportunity → proposals → AI evaluation → business selection → contract → advance → execution → delivery → NGO verification → AI verification → corporate approval → final payment → completion → impact report. 
+
+Below is the **copy-paste-ready master description for Person 2**.
+
+---
+
+# IRISiv — Backend Developer Complete Task Specification
+
+## 1. Your Role
+
+You are the **Backend Engineer responsible for building the complete backend/application logic of IRISiv**.
+
+Your responsibility is to build the system that sits behind the frontend and makes the IRISiv workflow actually work.
+
+The frontend will be developed by Person 1.
+
+The database will be designed and maintained by Person 3.
+
+AI and advanced integrations will be handled by Person 4.
+
+Your job is to connect these layers through a **clean, secure, well-structured backend**.
+
+---
+
+# 2. Your Main Objective
+
+Your goal is to implement the complete IRISiv business workflow as backend logic and APIs.
+
+The frontend should be able to call your APIs and perform this entire lifecycle:
+
+```text
+NGO
+ ↓
+Create Requirement
+ ↓
+Corporate
+ ↓
+Approve / Fund CSR Project
+ ↓
+Platform
+ ↓
+Publish Opportunity
+ ↓
+Business
+ ↓
+Submit Proposal
+ ↓
+AI
+ ↓
+Evaluate Proposal
+ ↓
+Corporate
+ ↓
+Select Business
+ ↓
+Contract
+ ↓
+Advance Payment State
+ ↓
+Business
+ ↓
+Execute Project
+ ↓
+Submit Delivery + Evidence
+ ↓
+NGO
+ ↓
+Verify Delivery
+ ↓
+AI
+ ↓
+Analyze Verification
+ ↓
+Corporate
+ ↓
+Approve Final Payment
+ ↓
+Project Completed
+ ↓
+Impact Report
+```
+
+This is the **fixed business workflow**.
+
+### DO NOT redesign it.
+
+The backend must implement this workflow rather than inventing a different product.
+
+---
+
+# 3. Your Responsibilities
+
+You are responsible for:
+
+* Backend architecture
+* API design
+* Authentication integration
+* Authorization logic
+* Business rules
+* Project lifecycle/state machine
+* Requirement workflow
+* CSR approval
+* Opportunity publishing
+* Proposal workflow
+* Business selection
+* Contract workflow
+* Payment state management
+* Delivery workflow
+* Verification workflow
+* AI service integration
+* Notifications/events
+* Impact-report data aggregation
+* Audit logging
+* API validation
+* Error handling
+* Security
+* Backend testing
+* API documentation
+
+You are **NOT** responsible for:
+
+* Designing the frontend
+* Designing the database schema independently
+* Building UI components
+* Implementing AI models themselves
+* Real banking/payment infrastructure
+
+---
+
+# 4. Important Team Architecture
+
+Your position in the system:
+
+```text
+                  IRISiv
+                    │
+                    ▼
+               FRONTEND
+              Person 1
+                    │
+                    │ API
+                    ▼
+               BACKEND
+              YOU / P2
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+    DATABASE       AI       SERVICES
+   Person 3      Person 4
+```
+
+The backend is the **orchestration layer**.
+
+For example:
+
+```text
+Frontend
+   ↓
+POST /projects/:id/delivery
+   ↓
+Backend
+   ↓
+Validate request
+   ↓
+Save delivery
+   ↓
+Save evidence metadata
+   ↓
+Trigger AI verification
+   ↓
+Store verification result
+   ↓
+Update project state
+   ↓
+Notify appropriate users
+```
+
+The frontend should never directly implement this workflow.
+
+---
+
+# 5. Technology
+
+Use the team's finalized stack.
+
+Recommended:
+
+* **TypeScript**
+* **Node.js**
+* **Next.js server/API layer OR dedicated Node backend**
+* **Supabase**
+* **PostgreSQL**
+* REST APIs or a clearly documented equivalent
+
+The exact backend framework should be agreed with the team before implementation.
+
+Do not introduce unnecessary technologies.
+
+---
+
+# 6. Backend Architecture
+
+Use a clean separation between:
+
+```text
+Routes / Controllers
+        ↓
+Validation
+        ↓
+Services
+        ↓
+Business Logic
+        ↓
+Database Layer
+        ↓
+External Services
+```
+
+For example:
+
+```text
+POST /api/projects/:id/approve
+        ↓
+ProjectController
+        ↓
+ProjectService
+        ↓
+validateProjectApproval()
+        ↓
+database
+        ↓
+audit log
+        ↓
+notification
+```
+
+Do not put the entire application inside route handlers.
+
+---
+
+# 7. Authentication
+
+Integrate with the authentication system selected by the team.
+
+Users must have roles:
+
+```text
+NGO
+CORPORATE
+BUSINESS
+ADMIN
+```
+
+Authentication proves:
+
+> Who is the user?
+
+Authorization determines:
+
+> What is this user allowed to do?
+
+These are different.
+
+---
+
+# 8. Authorization
+
+Implement role-based authorization on the backend.
+
+### NGO
+
+Can:
+
+* Create requirements
+* View own requirements
+* View own projects
+* Submit verification
+* Upload evidence through authorized flow
+* View relevant project results
+
+Cannot:
+
+* Approve corporate funding
+* Select businesses
+* Modify corporate payment approvals
+* Change AI results
+
+---
+
+### Corporate
+
+Can:
+
+* View eligible requirements/projects
+* Approve CSR projects
+* Publish/fund opportunities according to workflow
+* View proposals
+* Select business
+* View project execution
+* Review verification
+* Approve final payment state
+* View impact reports
+
+Cannot:
+
+* Modify NGO verification data arbitrarily
+* Modify AI output directly
+
+---
+
+### Business
+
+Can:
+
+* View published opportunities
+* Submit proposals
+* View own proposals
+* View selected projects
+* Start execution
+* Submit delivery
+* Submit evidence
+* View own payment state
+
+Cannot:
+
+* Approve its own proposal
+* Change NGO verification
+* Approve its own final payment
+
+---
+
+### Admin
+
+For the hackathon prototype, Admin may have broader access for:
+
+* Demonstration
+* Moderation
+* Testing
+* User management
+* Project management
+* Audit inspection
+
+Do not use Admin permissions to bypass normal workflow during the actual demo.
+
+---
+
+# 9. Project State Machine
+
+This is one of your most important responsibilities.
+
+Implement a controlled project lifecycle.
+
+Recommended states:
+
+```text
+DRAFT
+↓
+SUBMITTED
+↓
+CSR_APPROVED
+↓
+PUBLISHED
+↓
+PROPOSALS_OPEN
+↓
+BUSINESS_SELECTED
+↓
+CONTRACTED
+↓
+ADVANCE_PAID
+↓
+IN_PROGRESS
+↓
+DELIVERY_SUBMITTED
+↓
+NGO_VERIFIED
+↓
+AI_VERIFIED
+↓
+FINAL_PAYMENT_PENDING
+↓
+COMPLETED
+```
+
+Exception path:
+
+```text
+DELIVERY_SUBMITTED
+        ↓
+AI_VERIFICATION
+        ↓
+ISSUE_DETECTED
+        ↓
+MANUAL_REVIEW
+        ↓
+RESOLVED
+```
+
+The backend must prevent invalid transitions.
+
+For example:
+
+```text
+DRAFT → FINAL_PAYMENT_PENDING
+```
+
+should not be allowed.
+
+---
+
+# 10. State Transition Rules
+
+Create a central service such as:
+
+```text
+ProjectStateService
+```
+
+or equivalent.
+
+It should validate transitions.
+
+Example:
+
+```text
+canTransition(
+    currentStatus,
+    requestedStatus
+)
+```
+
+Do not allow every API endpoint to manually modify status however it wants.
+
+The state machine should be centralized.
+
+---
+
+# 11. NGO Requirement API
+
+Implement endpoints such as:
+
+```text
+POST /api/requirements
+GET /api/requirements
+GET /api/requirements/:id
+PATCH /api/requirements/:id
+POST /api/requirements/:id/submit
+```
+
+Requirement data should include the fields required by the finalized workflow, such as:
+
+* Project title
+* Category
+* Location
+* Beneficiaries
+* Requirement
+* Budget
+* Deadline
+* Description
+* NGO
+* Status
+
+---
+
+# 12. Corporate Approval
+
+Implement:
+
+```text
+POST /api/projects/:id/approve
+```
+
+Backend must:
+
+1. Authenticate corporate user.
+2. Verify corporate has permission.
+3. Verify project is in correct state.
+4. Validate required information.
+5. Update project state.
+6. Record audit event.
+7. Create notification/event where appropriate.
+8. Return updated project.
+
+---
+
+# 13. Opportunity Publishing
+
+After approval:
+
+```text
+POST /api/projects/:id/publish
+```
+
+Backend should:
+
+* Validate project
+* Confirm approval
+* Change project state
+* Make opportunity visible to eligible businesses
+* Record audit event
+
+The frontend then displays the opportunity.
+
+---
+
+# 14. Business Opportunity API
+
+Implement:
+
+```text
+GET /api/opportunities
+GET /api/opportunities/:id
+```
+
+Business users should only see opportunities they are authorized/eligible to see according to the implemented rules.
+
+Do not expose private corporate/NGO information unnecessarily.
+
+---
+
+# 15. Proposal System
+
+Implement:
+
+```text
+POST /api/projects/:id/proposals
+GET /api/projects/:id/proposals
+GET /api/proposals/:id
+PATCH /api/proposals/:id
+```
+
+Proposal data can include:
+
+```text
+Business
+Project
+Bid Amount
+Delivery Timeline
+Capacity
+Experience
+Proposal Description
+Status
+Submitted At
+```
+
+---
+
+# 16. Proposal Validation
+
+Before accepting a proposal:
+
+Check:
+
+* User is authenticated.
+* User belongs to a business.
+* Business is allowed to bid.
+* Project is published/open.
+* Business has not already submitted a duplicate proposal if duplicates aren't allowed.
+* Required fields are present.
+* Bid is valid.
+* Timeline is valid.
+
+Return meaningful errors.
+
+Example:
+
+```json
+{
+  "code": "PROPOSAL_ALREADY_EXISTS",
+  "message": "This business has already submitted a proposal for this project."
+}
+```
+
+---
+
+# 17. AI Proposal Evaluation Integration
+
+The backend should integrate with Person 4's AI service.
+
+Workflow:
+
+```text
+Business submits proposal
+        ↓
+Backend saves proposal
+        ↓
+Backend calls AI service
+        ↓
+AI evaluates proposal
+        ↓
+AI returns scores
+        ↓
+Backend validates response
+        ↓
+Backend stores AI result
+        ↓
+Corporate can view result
+```
+
+Example AI result:
+
+```text
+Cost Score: 95
+Timeline Score: 92
+Capacity Score: 94
+Experience Score: 91
+Feasibility Score: 93
+Overall Score: 93
+Recommendation: Strong Candidate
+```
+
+The backend should store this result.
+
+---
+
+# 18. VERY IMPORTANT — AI Is Not the Final Authority
+
+The project workflow specifically defines AI as a decision-support/verification assistant rather than the entity that decides whether money should be released. 
+
+Therefore:
+
+```text
+AI Recommendation
+        ↓
+Corporate Review
+        ↓
+Corporate Decision
+```
+
+NOT:
+
+```text
+AI
+ ↓
+Automatically Select Business
+```
+
+And not:
+
+```text
+AI
+ ↓
+Automatically Release Payment
+```
+
+---
+
+# 19. Business Selection
+
+Implement:
+
+```text
+POST /api/proposals/:id/select
+```
+
+Backend must:
+
+1. Authenticate corporate user.
+2. Verify corporate owns/controls the project.
+3. Verify project is accepting proposals.
+4. Verify proposal exists.
+5. Verify business is eligible.
+6. Mark selected proposal.
+7. Reject/close other proposals according to agreed workflow.
+8. Update project state.
+9. Record audit event.
+10. Notify business.
+11. Return updated project.
+
+---
+
+# 20. Contract Workflow
+
+Implement the contract state.
+
+Example:
+
+```text
+POST /api/projects/:id/contract
+GET /api/projects/:id/contract
+```
+
+Store:
+
+```text
+Contract ID
+Project ID
+Corporate
+Business
+Amount
+Terms/metadata
+Created At
+Status
+```
+
+For the hackathon, this can be a simulated contract record.
+
+---
+
+# 21. Payment Workflow
+
+For the hackathon, **do NOT build actual money movement**.
+
+The project documentation explicitly allows payment simulation for the demo. 
+
+Implement payment as controlled state.
+
+Example:
+
+```text
+Contract Value
+₹50,000
+
+Advance
+₹15,000
+
+Remaining
+₹35,000
+```
+
+Endpoints:
+
+```text
+POST /api/projects/:id/payment/advance
+GET /api/projects/:id/payments
+POST /api/projects/:id/payment/final
+```
+
+The backend should record:
+
+```text
+Payment ID
+Project
+Amount
+Type
+Status
+Created At
+Approved By
+```
+
+Do not claim this is a real bank transaction.
+
+---
+
+# 22. Business Execution
+
+Implement:
+
+```text
+POST /api/projects/:id/start
+```
+
+Rules:
+
+Business can start only when:
+
+```text
+Business selected
++
+Contract exists
++
+Required advance state completed
+```
+
+Then:
+
+```text
+BUSINESS_SELECTED
+        ↓
+CONTRACTED
+        ↓
+ADVANCE_PAID
+        ↓
+IN_PROGRESS
+```
+
+---
+
+# 23. Delivery Submission
+
+Implement:
+
+```text
+POST /api/projects/:id/delivery
+GET /api/projects/:id/delivery
+PATCH /api/deliveries/:id
+```
+
+Delivery can contain:
+
+```text
+Quantity Delivered
+Delivery Date
+Quality
+Comments
+```
+
+Evidence metadata:
+
+```text
+Invoice
+Delivery Receipt
+Photos
+Quantity Confirmation
+Authorized Confirmation
+Other Supporting Documents
+```
+
+The source workflow explicitly describes these evidence types. 
+
+---
+
+# 24. Evidence Handling
+
+Person 3 owns the database/storage structure.
+
+You must provide the backend service/API layer that coordinates it.
+
+Example:
+
+```text
+POST /api/deliveries/:id/evidence
+GET /api/deliveries/:id/evidence
+DELETE /api/evidence/:id
+```
+
+Do not store large files directly inside database rows.
+
+Use the team's agreed storage mechanism and store metadata/reference information in the database.
+
+---
+
+# 25. NGO Verification
+
+Implement:
+
+```text
+POST /api/projects/:id/verification
+GET /api/projects/:id/verification
+```
+
+NGO verification can include:
+
+```text
+Quantity Requested
+Quantity Received
+Delivery Date
+Quality Acceptable
+Packaging Acceptable
+Delivered On Time
+Invoice Reference
+Comments
+Authorized Representative Confirmation
+```
+
+These fields are directly aligned with the finalized verification concept. 
+
+---
+
+# 26. AI Verification Integration
+
+Workflow:
+
+```text
+NGO submits verification
+        ↓
+Backend validates
+        ↓
+Backend stores verification
+        ↓
+Backend gathers:
+  - requirement
+  - delivery
+  - evidence metadata
+  - NGO verification
+        ↓
+Backend calls AI service
+        ↓
+AI returns verification analysis
+        ↓
+Backend stores result
+        ↓
+Project state updated
+        ↓
+Corporate notified
+```
+
+Example result:
+
+```text
+Status:
+LIKELY_FULFILLED
+
+Confidence:
+96%
+
+Requested:
+500
+
+Received:
+500
+
+Completion:
+100%
+
+Issues:
+None
+```
+
+The source project describes this type of result. 
+
+---
+
+# 27. AI Mismatch Scenario
+
+The backend must support failure.
+
+Example:
+
+```text
+Requested:
+1000
+
+Received:
+950
+```
+
+AI result:
+
+```text
+Issue:
+QUANTITY_MISMATCH
+
+Shortfall:
+50
+
+ShortfallPercentage:
+5%
+
+Recommendation:
+MANUAL_REVIEW_REQUIRED
+```
+
+Backend should NOT automatically release final payment.
+
+Instead:
+
+```text
+AI Verification
+      ↓
+ISSUE_DETECTED
+      ↓
+MANUAL_REVIEW
+```
+
+---
+
+# 28. Corporate Verification Review
+
+Implement an endpoint such as:
+
+```text
+POST /api/projects/:id/verification/review
+```
+
+Corporate can review:
+
+* NGO confirmation
+* Platform validation
+* AI result
+* Evidence
+* Delivery
+* Issues
+
+The source workflow explicitly places corporate approval after NGO confirmation and platform/AI validation. 
+
+---
+
+# 29. Final Payment
+
+Only after the required verification/review conditions are satisfied should the backend allow:
+
+```text
+POST /api/projects/:id/payment/final
+```
+
+Then:
+
+```text
+FINAL_PAYMENT_PENDING
+        ↓
+COMPLETED
+```
+
+The exact legal/financial structure for real-world payments is outside the hackathon implementation and requires separate legal/financial review. The prototype should model the workflow without claiming IRISiv itself legally holds CSR funds. 
+
+---
+
+# 30. Project Completion
+
+When final payment state is approved:
+
+Backend should:
+
+1. Update payment state.
+2. Update project status.
+3. Record audit event.
+4. Generate/update impact data.
+5. Notify relevant stakeholders.
+6. Make project available in completed-project views.
+
+Final state:
+
+```text
+COMPLETED
+```
+
+---
+
+# 31. Impact Report Data
+
+Implement:
+
+```text
+GET /api/projects/:id/impact
+POST /api/projects/:id/impact-report
+```
+
+Aggregate:
+
+```text
+Project
+Contract value
+Advance
+Final payment
+Beneficiaries
+Requested quantity
+Delivered quantity
+Completion %
+Delivery date
+Verification result
+Evidence
+Project status
+```
+
+The source workflow describes the completed project being represented through these measurable outcomes. 
+
+---
+
+# 32. Notifications
+
+Implement a notification/event system.
+
+Examples:
+
+### NGO
+
+```text
+Delivery submitted for CSR-1024.
+Verification required.
+```
+
+### Corporate
+
+```text
+New proposal received for CSR-1024.
+```
+
+### Business
+
+```text
+Your proposal for CSR-1024 was selected.
+```
+
+### Corporate
+
+```text
+AI verification completed for CSR-1024.
+```
+
+The frontend will consume your notification API.
+
+---
+
+# 33. Audit Trail
+
+This is important for IRISiv because the platform is fundamentally about trust and accountability.
+
+Record events such as:
+
+```text
+PROJECT_CREATED
+REQUIREMENT_SUBMITTED
+CSR_APPROVED
+OPPORTUNITY_PUBLISHED
+PROPOSAL_SUBMITTED
+AI_PROPOSAL_EVALUATED
+BUSINESS_SELECTED
+CONTRACT_CREATED
+ADVANCE_PAYMENT_RECORDED
+PROJECT_STARTED
+DELIVERY_SUBMITTED
+NGO_VERIFICATION_SUBMITTED
+AI_VERIFICATION_COMPLETED
+MANUAL_REVIEW_CREATED
+CORPORATE_VERIFICATION_APPROVED
+FINAL_PAYMENT_RECORDED
+PROJECT_COMPLETED
+IMPACT_REPORT_GENERATED
+```
+
+Each audit record should contain, where appropriate:
+
+```text
+Actor
+Role
+Action
+Project
+Timestamp
+Metadata
+```
+
+Do not allow ordinary users to arbitrarily edit audit history.
+
+---
+
+# 34. API Design
+
+At minimum, create APIs around these resources:
+
+```text
+/auth
+/users
+/organizations
+/requirements
+/projects
+/opportunities
+/proposals
+/contracts
+/payments
+/deliveries
+/evidence
+/verifications
+/notifications
+/impact
+/audit
+```
+
+Example:
+
+```text
+POST   /api/requirements
+GET    /api/requirements
+
+GET    /api/projects
+GET    /api/projects/:id
+POST   /api/projects/:id/approve
+POST   /api/projects/:id/publish
+POST   /api/projects/:id/start
+
+POST   /api/projects/:id/proposals
+GET    /api/projects/:id/proposals
+
+POST   /api/proposals/:id/select
+
+POST   /api/projects/:id/contract
+
+POST   /api/projects/:id/payment/advance
+GET    /api/projects/:id/payments
+POST   /api/projects/:id/payment/final
+
+POST   /api/projects/:id/delivery
+GET    /api/projects/:id/delivery
+
+POST   /api/projects/:id/verification
+GET    /api/projects/:id/verification
+
+POST   /api/projects/:id/verification/review
+
+GET    /api/projects/:id/impact
+```
+
+Exact endpoint naming can be refined with Person 1 and Person 3, but the underlying capabilities must remain.
+
+---
+
+# 35. Validation
+
+Every API must validate incoming data.
+
+Validate:
+
+* Required fields
+* Data types
+* Amounts
+* Dates
+* IDs
+* Status
+* Ownership
+* Permissions
+* Duplicate operations
+
+Do not trust frontend validation.
+
+Frontend validation improves UX.
+
+Backend validation provides actual protection.
+
+---
+
+# 36. Error Handling
+
+Create consistent API errors.
+
+Example:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_PROJECT_STATE",
+    "message": "This project cannot accept proposals in its current state."
+  }
+}
+```
+
+Use appropriate HTTP status codes.
+
+Examples:
+
+```text
+400 → Invalid request
+401 → Unauthenticated
+403 → Unauthorized
+404 → Resource not found
+409 → Invalid state/conflict
+422 → Validation error
+500 → Unexpected server error
+```
+
+---
+
+# 37. Idempotency / Duplicate Protection
+
+Important actions should not accidentally execute twice.
+
+Examples:
+
+A corporate should not accidentally record:
+
+```text
+Advance payment
+₹15,000
+```
+
+twice because the button was clicked twice.
+
+Similarly:
+
+* Proposal submission
+* Business selection
+* Delivery submission
+* Final payment
+
+should have duplicate protection where appropriate.
+
+---
+
+# 38. Database Collaboration
+
+You are NOT the sole owner of the database.
+
+Person 3 owns:
+
+* PostgreSQL schema
+* Migrations
+* Relationships
+* Indexes
+* RLS
+* Storage structure
+
+You own:
+
+* How the backend uses those tables
+* Service/repository logic
+* Transactions
+* Validation
+* API behavior
+
+Before changing the schema:
+
+> **Discuss with Person 3 first.**
+
+Never casually change production schema from backend code.
+
+---
+
+# 39. Transaction Safety
+
+Use database transactions where multiple operations must succeed together.
+
+Example:
+
+Business selection may involve:
+
+```text
+1. Select proposal
+2. Update project
+3. Close other proposals
+4. Create contract
+5. Create audit record
+6. Create notification
+```
+
+If critical parts fail, the database should not be left in an inconsistent state.
+
+---
+
+# 40. API Documentation
+
+Maintain backend API documentation.
+
+At minimum document:
+
+```text
+Endpoint
+Method
+Authentication
+Role
+Request body
+Response
+Possible errors
+State requirements
+```
+
+Example:
+
+```text
+POST /api/proposals/:id/select
+
+Role:
+Corporate
+
+Precondition:
+Project status = PROPOSALS_OPEN
+
+Action:
+Select business
+
+Result:
+Project → BUSINESS_SELECTED
+```
+
+This documentation is critical for Person 1.
+
+---
+
+# 41. Frontend Contract
+
+Person 1 will depend on your APIs.
+
+You MUST communicate:
+
+### What endpoint exists
+
+### What request it expects
+
+### What response it returns
+
+### What errors it can return
+
+### Which role can call it
+
+### What project state is required
+
+Example:
+
+```text
+GET /api/projects/:id
+```
+
+Response:
+
+```json
+{
+  "id": "CSR-1024",
+  "title": "School Kit Distribution",
+  "status": "IN_PROGRESS",
+  "budget": 50000,
+  "beneficiaries": 500,
+  "ngo": {},
+  "corporate": {},
+  "business": {}
+}
+```
+
+Do not make Person 1 guess your API.
+
+---
+
+# 42. AI Contract With Person 4
+
+You will also work closely with Person 4.
+
+Define a stable AI interface.
+
+Example:
+
+```text
+POST /api/ai/proposal-evaluation
+```
+
+Input:
+
+```json
+{
+  "project": {},
+  "proposal": {}
+}
+```
+
+Output:
+
+```json
+{
+  "overallScore": 93,
+  "scores": {
+    "cost": 95,
+    "timeline": 92,
+    "capacity": 94,
+    "experience": 91
+  },
+  "recommendation": "Strong Candidate",
+  "reasoning": "..."
+}
+```
+
+Your backend should consume the AI service.
+
+Person 4 owns the AI implementation.
+
+---
+
+# 43. Do NOT Put AI Logic Everywhere
+
+Avoid:
+
+```text
+Route → random AI call
+Route → another AI call
+Route → another AI prompt
+```
+
+Instead create a clear service:
+
+```text
+AIService
+ ├── evaluateProposal()
+ ├── verifyDelivery()
+ └── generateImpactReport()
+```
+
+This will make the system much easier to replace or upgrade later.
+
+---
+
+# 44. Real-World vs Hackathon
+
+Build the backend so that the **workflow can survive beyond the hackathon**.
+
+For the hackathon:
+
+```text
+Payment = simulated
+AI = prototype
+Organizations = demo/seed data
+Verification = controlled workflow
+```
+
+But architect the services so that later they can become:
+
+```text
+PaymentService → real regulated payment infrastructure
+AIService → production AI
+OrganizationVerification → real KYC/KYB/compliance
+Storage → production document storage
+NotificationService → production messaging
+```
+
+The fundamental workflow should not need to be redesigned.
+
+---
+
+# 45. Testing
+
+Create tests for the **business workflow**, not only individual functions.
+
+At minimum test:
+
+### Happy path
+
+```text
+Requirement
+→ Approval
+→ Publish
+→ Proposal
+→ Selection
+→ Contract
+→ Advance
+→ Start
+→ Delivery
+→ NGO Verification
+→ AI Verification
+→ Corporate Approval
+→ Final Payment
+→ Complete
+```
+
+### Failure cases
+
+Test:
+
+* Unauthorized user
+* Invalid project state
+* Duplicate proposal
+* Duplicate payment
+* Business tries to approve own proposal
+* NGO tries to select business
+* Business tries to modify verification
+* Delivery mismatch
+* Missing evidence
+* Invalid project ID
+* Invalid payment transition
+
+---
+
+# 46. Backend Definition of Done
+
+Your backend is NOT complete when:
+
+> "All APIs return 200."
+
+It is complete when the **entire lifecycle works correctly**.
+
+### Authentication
+
+* [ ] Login works
+* [ ] Roles work
+* [ ] Authorization works
+
+### Requirements
+
+* [ ] NGO creates requirement
+* [ ] Requirement submitted
+* [ ] Corporate can review
+* [ ] Corporate can approve
+
+### Opportunity
+
+* [ ] Opportunity can be published
+* [ ] Business can view it
+
+### Proposals
+
+* [ ] Business submits proposal
+* [ ] Corporate views proposals
+* [ ] AI result is stored
+* [ ] Corporate selects business
+
+### Contract
+
+* [ ] Contract state exists
+* [ ] Business becomes eligible to start
+
+### Payment
+
+* [ ] Advance state
+* [ ] Final payment state
+* [ ] Duplicate protection
+
+### Execution
+
+* [ ] Business starts project
+* [ ] Delivery submitted
+* [ ] Evidence linked
+
+### Verification
+
+* [ ] NGO verification
+* [ ] AI verification
+* [ ] Issue/manual review
+* [ ] Corporate review
+
+### Completion
+
+* [ ] Final payment
+* [ ] Project completed
+* [ ] Impact data
+* [ ] Notifications
+* [ ] Audit trail
+
+---
+
+# 47. The Most Important Backend Requirement
+
+The backend must be able to run the entire project lifecycle **without the frontend**.
+
+You should be able to test this through Postman/Swagger/API tests:
+
+```text
+1. Create NGO
+        ↓
+2. Create Requirement
+        ↓
+3. Corporate Approves
+        ↓
+4. Publish Opportunity
+        ↓
+5. Business Submits Proposal
+        ↓
+6. AI Evaluates
+        ↓
+7. Corporate Selects Business
+        ↓
+8. Contract
+        ↓
+9. Advance Payment State
+        ↓
+10. Business Starts
+        ↓
+11. Delivery Submitted
+        ↓
+12. NGO Verifies
+        ↓
+13. AI Verifies
+        ↓
+14. Corporate Reviews
+        ↓
+15. Final Payment State
+        ↓
+16. Project Completed
+        ↓
+17. Impact Report
+```
+
+If this works through APIs, **Person 1 can then connect the frontend to a functioning backend instead of building against an imaginary system.**
+
+---
+
+# 48. Your First Development Phase
+
+Do NOT start by creating 50 endpoints.
+
+Start in this order:
+
+### Phase 1 — Backend Foundation
+
+* Project setup
+* Environment configuration
+* API architecture
+* Authentication integration
+* Error handling
+* Validation
+* Database connection
+* Logging
+
+### Phase 2 — Core Lifecycle
+
+Build:
+
+```text
+Requirement
+→ Project
+→ Approval
+→ Publish
+```
+
+### Phase 3 — Marketplace
+
+Build:
+
+```text
+Opportunity
+→ Proposal
+→ AI Evaluation
+→ Selection
+```
+
+### Phase 4 — Execution
+
+Build:
+
+```text
+Contract
+→ Advance
+→ Start
+→ Delivery
+→ Evidence
+```
+
+### Phase 5 — Trust
+
+Build:
+
+```text
+NGO Verification
+→ AI Verification
+→ Manual Review
+```
+
+### Phase 6 — Completion
+
+Build:
+
+```text
+Corporate Approval
+→ Final Payment
+→ Completion
+→ Impact Report
+```
+
+### Phase 7 — Production Quality
+
+Add:
+
+* Audit logs
+* Notifications
+* Security hardening
+* Validation
+* Tests
+* API documentation
+* Error handling
+* Performance improvements
+
+---
+
+# 49. Final Message to Person 2
+
+> **You are not just building APIs. You are building the operational engine of IRISiv.**
+>
+> The frontend will show what happens, but **your backend determines whether it is actually possible for the CSR project to move from one stage to another.**
+>
+> Your most important deliverable is therefore a reliable state-driven backend that can take one CSR project from **NGO requirement all the way to verified impact and project completion**.
+>
+> If the frontend disappeared tomorrow, you should still be able to demonstrate the complete IRISiv lifecycle through your APIs.
+
+The finalized project workflow explicitly describes IRISiv as a coherent end-to-end system rather than a feature collection, and the backend should preserve exactly that principle. 
+
+### **Person 2's ownership in one sentence:**
+
+> **Person 1 builds what the user sees → Person 2 builds what happens → Person 3 manages where the data lives → You build the intelligence and integrations.**
+
+That gives your four-person team a very clean technical boundary.
