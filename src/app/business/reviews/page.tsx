@@ -120,7 +120,7 @@ export default function BusinessReviewsPage() {
               </p>
 
               <div className="text-[10px] text-slate-400 font-mono text-right">
-                {new Date(rev.created_at).toLocaleDateString()}
+                {rev.created_at ? new Date(rev.created_at).toISOString().split('T')[0] : 'Recent'}
               </div>
             </div>
           ))}
