@@ -5,10 +5,10 @@ import { UserRole } from '@/types';
 import { Bot, X, Send, Sparkles, UserCheck } from 'lucide-react';
 
 interface AIAssistantDrawerProps {
-  currentRole: UserRole;
+  currentRole?: UserRole | 'LANDING';
 }
 
-export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ currentRole }) => {
+export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ currentRole = 'LANDING' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);

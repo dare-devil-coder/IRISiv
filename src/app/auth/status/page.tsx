@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { Navbar } from '@/components/shared/Navbar';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
 import { AccountStatus } from '@/types';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
@@ -20,7 +20,7 @@ function AccountStatusContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Navbar currentRole="LANDING" />
+      <PublicNavbar />
 
       <div className="max-w-xl mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
         {/* Interactive State Demo Switcher */}

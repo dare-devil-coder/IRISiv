@@ -3,44 +3,79 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/shared/Navbar';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
 import { UserRole } from '@/types';
-import { Shield, Building2, ShieldCheck, Briefcase, ArrowRight, Lock } from 'lucide-react';
+import { Shield, Building2, ShieldCheck, Briefcase, ArrowRight, Lock, Users, ShieldAlert, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<UserRole>('NGO');
   const [email, setEmail] = useState('ananya@shikshafoundation.org');
+  const [password, setPassword] = useState('ngo');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRoleChange = (r: UserRole) => {
-    setSelectedRole(r);
-    if (r === 'NGO') setEmail('ananya@shikshafoundation.org');
-    if (r === 'CORPORATE') setEmail('rajesh.verma@apextech.com');
-    if (r === 'BUSINESS') setEmail('vikram@greengrowsupplies.com');
-    if (r === 'ADMIN') setEmail('admin@irisiv.org');
+  const demoAccounts = [
+    { role: 'NGO', name: 'NGO Partner', email: 'ananya@shikshafoundation.org', pass: 'ngo', org: 'Shiksha Foundation' },
+    { role: 'CORPORATE', name: 'Company CSR', email: 'rahul@apextech.com', pass: 'corp', org: 'Apex Technologies' },
+    { role: 'BUSINESS', name: 'Vendor Supplier', email: 'vikram@greengrow.in', pass: 'biz', org: 'GreenGrow Supplies' },
+    { role: 'ADMIN', name: 'Compliance Admin', email: 'admin@irisiv.org', pass: 'admin', org: 'IRISiv Compliance' },
+  ];
+
+  const selectAccount = (acc: typeof demoAccounts[0]) => {
+    setEmail(acc.email);
+    setPassword(acc.pass);
+    setError(null);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    switch (selectedRole) {
-      case 'NGO':
-        router.push('/ngo/dashboard');
-        break;
-      case 'CORPORATE':
-        router.push('/corporate/dashboard');
-        break;
-      case 'BUSINESS':
-        router.push('/business/dashboard');
-        break;
-      case 'ADMIN':
-        router.push('/admin/dashboard');
-        break;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || 'Invalid credentials');
+      }
+
+      const role = json.data?.role as UserRole;
+      if (json.data?.token) {
+        localStorage.setItem('irisiv_auth_token', json.data.token);
+      }
+
+      // Auto redirect based on account role
+      switch (role) {
+        case 'NGO':
+          router.push('/ngo/dashboard');
+          break;
+        case 'CORPORATE':
+          router.push('/company/dashboard');
+          break;
+        case 'BUSINESS':
+          router.push('/business/dashboard');
+          break;
+        case 'ADMIN':
+          router.push('/admin/dashboard');
+          break;
+        default:
+          router.push('/ngo/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Navbar currentRole="LANDING" />
+      <PublicNavbar />
 
       <div className="max-w-md mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden p-8 space-y-6">
@@ -52,26 +87,35 @@ export default function LoginPage() {
             <p className="text-xs text-slate-500">Access verified CSR procurement and execution portal</p>
           </div>
 
-          {/* Role Selector Tabs */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-2">Select Your Role</label>
-            <div className="grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200 text-xs">
-              {(['NGO', 'CORPORATE', 'BUSINESS', 'ADMIN'] as UserRole[]).map((r) => (
+          {/* Quick Select Demo Accounts */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-bold text-slate-500 font-mono uppercase tracking-wider">
+              Quick Test Accounts (Click to Fill)
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {demoAccounts.map((acc) => (
                 <button
-                  key={r}
+                  key={acc.role}
                   type="button"
-                  onClick={() => handleRoleChange(r)}
-                  className={`py-1.5 rounded-lg font-bold text-[11px] transition-all ${
-                    selectedRole === r
-                      ? 'bg-white text-slate-900 shadow-sm border border-slate-300'
-                      : 'text-slate-500 hover:text-slate-800'
+                  onClick={() => selectAccount(acc)}
+                  className={`p-2 rounded-xl border text-left text-xs transition-all ${
+                    email === acc.email
+                      ? 'bg-teal-50 border-teal-300 text-teal-900 shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  {r === 'CORPORATE' ? 'COMPANY' : r}
+                  <span className="font-bold block text-[11px]">{acc.name}</span>
+                  <span className="text-[10px] text-slate-400 font-mono block truncate">{acc.email}</span>
                 </button>
               ))}
             </div>
           </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -90,17 +134,25 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
-                defaultValue="password123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
+              disabled={loading}
               className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2 transition"
             >
-              <span>Enter {selectedRole === 'CORPORATE' ? 'COMPANY' : selectedRole} Portal</span>
-              <ArrowRight className="h-4 w-4" />
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <span>Sign In to Role Portal</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </form>
 

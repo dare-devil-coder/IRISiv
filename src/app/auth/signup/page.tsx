@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/shared/Navbar';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
 import { UserRole } from '@/types';
 import {
   Building2,
@@ -72,7 +72,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <Navbar currentRole="LANDING" />
+      <PublicNavbar />
 
       <div className="max-w-2xl mx-auto px-4 py-12 w-full flex-1 flex flex-col justify-center">
         <div className="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
