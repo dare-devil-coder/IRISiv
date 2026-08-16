@@ -1214,6 +1214,30 @@ export class ProjectService {
     return store.organizations.filter((o) => o.kyc_status === kycStatus);
   }
 
+  static createOrganization(data: Partial<Organization>): Organization {
+    const orgType = data.organization_type || data.type || 'NGO';
+    const newOrg: Organization = {
+      id: `org-${Date.now()}`,
+      name: data.name || 'New Organization',
+      organization_type: orgType,
+      type: orgType,
+      registration_number: data.registration_number || 'REG-PENDING',
+      pan_number: data.pan_number || 'PAN-PENDING',
+      verification_status: data.verification_status || 'DOCUMENTS_SUBMITTED',
+      kyc_status: 'KYC_PENDING',
+      darpan_id: data.darpan_id,
+      csr_number: data.csr_number,
+      location: data.location || 'India',
+      domain: data.domain || 'General',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...data,
+    };
+    store.organizations.unshift(newOrg);
+    this.logAudit('system', 'prof-admin-1', 'ADMIN', 'KYC_APPLICATION_SUBMITTED', { org_name: newOrg.name, role: newOrg.type });
+    return newOrg;
+  }
+
   static approveKYC(orgId: string): Organization {
     const org = store.organizations.find((o) => o.id === orgId);
     if (!org) throw new Error('Organization not found');

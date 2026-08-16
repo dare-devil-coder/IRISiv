@@ -32,6 +32,8 @@ export default function SignupPage() {
   const [docUploaded, setDocUploaded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleNextToKYC = (e: React.FormEvent) => {
     e.preventDefault();
     setStep(3);
@@ -39,11 +41,33 @@ export default function SignupPage() {
 
   const handleCompleteKYC = async () => {
     setSubmitting(true);
-    // Simulate submission to admin queue
-    setTimeout(() => {
-      setSubmitting(false);
+    setError(null);
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: orgName || 'Authorized Signatory',
+          email: email || `contact@${orgName ? orgName.toLowerCase().replace(/\s+/g, '') : 'org'}.org`,
+          password: 'Password123!',
+          role,
+          organizationName: orgName,
+          location,
+          domain,
+          registrationNumber: regNumber,
+          panNumber: taxId,
+        }),
+      });
+
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error?.message || 'Registration failed');
+
       router.push('/auth/status?submitted=true');
-    }, 800);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
+import { ProjectService } from '@/lib/services/projectService';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, role = 'NGO', organizationName } = body;
+    const { name, email, password, role = 'NGO', organizationName, location, domain, registrationNumber, panNumber } = body;
 
     if (!email || !password || !name) {
       return NextResponse.json(
@@ -11,6 +12,17 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
+
+    const org = ProjectService.createOrganization({
+      name: organizationName || `${name}'s Organization`,
+      type: role,
+      location: location || 'India',
+      domain: domain || 'General',
+      registration_number: registrationNumber || 'REG-PENDING',
+      pan_number: panNumber || 'PAN-PENDING',
+      kyc_status: 'KYC_PENDING',
+      verification_status: 'DOCUMENTS_SUBMITTED',
+    });
 
     return NextResponse.json(
       {
@@ -21,8 +33,11 @@ export async function POST(request: Request) {
             name,
             email,
             role,
-            organizationName: organizationName || `${name} Org`,
+            organization_id: org.id,
+            organizationName: org.name,
+            kyc_status: org.kyc_status,
           },
+          organization: org,
           session: {
             access_token: `token-${Date.now()}`,
             token_type: 'bearer',

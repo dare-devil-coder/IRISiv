@@ -132,11 +132,15 @@ export interface Organization {
   id: string;
   name: string;
   organization_type: OrganizationType;
+  type?: OrganizationType;
   location?: string;
   phone?: string;
   domain?: string;
   registration_number?: string;
   tax_id?: string;
+  pan_number?: string;
+  darpan_id?: string;
+  csr_number?: string;
   kyc_status?: AccountStatus;
   rejection_reason?: string;
   verification_status?: OrgVerificationStatus;
