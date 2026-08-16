@@ -296,9 +296,11 @@ export class ProjectService {
     const rawProj = await this.findRawProject(projectId);
     if (!rawProj) throw new Error('Project not found');
 
-    StateMachineService.assertTransition(rawProj.status, 'SUBMITTED');
-    rawProj.status = 'SUBMITTED';
-    rawProj.updated_at = new Date().toISOString();
+    if (rawProj.status !== 'SUBMITTED') {
+      StateMachineService.assertTransition(rawProj.status, 'SUBMITTED');
+      rawProj.status = 'SUBMITTED';
+      rawProj.updated_at = new Date().toISOString();
+    }
 
     this.logAudit(rawProj.id, 'prof-ngo-1', 'NGO', 'NGO_APPROVED_NEED_ANALYSIS', {});
     this.notify('prof-corp-1', rawProj.id, 'NEW_REQUIREMENT', 'New NGO Requirement Submitted',
