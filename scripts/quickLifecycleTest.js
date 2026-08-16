@@ -1,7 +1,8 @@
 const fetch = globalThis.fetch || require('node-fetch');
 
 async function run() {
-  const base = 'http://localhost:3000';
+  const port = process.env.PORT || '3000';
+  const base = `http://localhost:${port}`;
   const proposalRes = await fetch(`${base}/api/projects/proj-dlc/proposals`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

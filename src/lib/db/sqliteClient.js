@@ -9,6 +9,22 @@ const DB_PATH = path.join(DATA_DIR, 'irisiv.db');
 let SQL = null;
 let db = null;
 let initPromise = null;
+let autoSaveInterval = null;
+let lastSaveTime = 0;
+
+function persistToDisk() {
+  if (!db) return;
+  try {
+    const data = db.export();
+    fs.writeFileSync(DB_PATH, Buffer.from(data));
+    lastSaveTime = Date.now();
+    console.log(`[SQLite] Persisted database to ${DB_PATH} (${data.length} bytes)`);
+    return true;
+  } catch (e) {
+    console.error(`[SQLite] Failed to persist: ${e.message}`);
+    return false;
+  }
+}
 
 function ensureInit() {
   if (initPromise) return initPromise;
@@ -18,8 +34,10 @@ function ensureInit() {
     if (fs.existsSync(DB_PATH)) {
       const filebuffer = fs.readFileSync(DB_PATH);
       db = new SQL.Database(new Uint8Array(filebuffer));
+      console.log(`[SQLite] Loaded existing database from ${DB_PATH}`);
     } else {
       db = new SQL.Database();
+      console.log(`[SQLite] Created new in-memory database`);
     }
 
     db.run(`
@@ -59,19 +77,20 @@ function ensureInit() {
       );
     `);
 
-    const persist = () => {
-      try {
-        const data = db.export();
-        fs.writeFileSync(DB_PATH, Buffer.from(data));
-      } catch (e) {
-        // ignore
-      }
-    };
-    process.on('exit', persist);
-    process.on('SIGINT', () => { persist(); process.exit(); });
+    // Setup process exit handlers
+    process.on('exit', persistToDisk);
+    process.on('SIGINT', () => { persistToDisk(); process.exit(0); });
+    process.on('SIGTERM', () => { persistToDisk(); process.exit(0); });
+
+    // Setup auto-save every 5 seconds
+    if (!autoSaveInterval) {
+      autoSaveInterval = setInterval(persistToDisk, 5000);
+      autoSaveInterval.unref(); // Don't block process exit
+    }
 
     // expose for runtime
     global.__IRISIV_DB_INSTANCE = db;
+    global.__IRISIV_PERSIST = persistToDisk;
     return db;
   });
   return initPromise;
@@ -136,7 +155,7 @@ class FromBuilder {
 
   async insert(rows) {
     await ensureInit();
-    return runAsync(() => {
+    const result = await runAsync(() => {
       const inserted = [];
       const keys = Object.keys(rows[0] || {});
       const cols = keys.join(',');
@@ -152,11 +171,16 @@ class FromBuilder {
       theDb.run('COMMIT'); stmt.free();
       return inserted;
     });
+    // Persist to disk after insert
+    if (result.data && global.__IRISIV_PERSIST) {
+      setTimeout(() => global.__IRISIV_PERSIST(), 100);
+    }
+    return result;
   }
 
   async update(obj) {
     await ensureInit();
-    return runAsync(() => {
+    const result = await runAsync(() => {
       const setKeys = Object.keys(obj);
       const setSql = setKeys.map((k) => `${k} = ?`).join(', ');
       const params = setKeys.map((k) => obj[k]);
@@ -176,11 +200,20 @@ class FromBuilder {
       stmt.step(); const changes = theDb.getRowsModified(); stmt.free();
       return { changes };
     });
+    // Persist to disk after update
+    if (result.data && global.__IRISIV_PERSIST) {
+      setTimeout(() => global.__IRISIV_PERSIST(), 100);
+    }
+    return result;
   }
 }
 
 const sqlite = {
-  from(table) { return new FromBuilder(table); }
+  from(table) { return new FromBuilder(table); },
+  async persist() {
+    await ensureInit();
+    return persistToDisk();
+  }
 };
 
 module.exports = sqlite;

@@ -82,6 +82,39 @@ export type AIVerificationStatus =
 
 export type ReviewDecision = 'APPROVE' | 'REQUEST_REVIEW' | 'REJECT';
 
+export type AccountStatus = 'KYC_PENDING' | 'KYC_APPROVED' | 'KYC_REJECTED' | 'ACTIVE';
+
+export type DeliveryStageStatus =
+  | 'NOT_STARTED'
+  | 'IN_PROGRESS'
+  | 'SUBMITTED'
+  | 'NGO_CONFIRMED'
+  | 'ISSUE_RAISED';
+
+export type PaymentStageStatus =
+  | '20_PERCENT_PENDING'
+  | '20_PERCENT_PAID'
+  | '40_PERCENT_PENDING'
+  | '40_PERCENT_PAID'
+  | 'FINAL_40_PERCENT_PENDING'
+  | 'FULLY_PAID';
+
+// ─── REVIEWS & RATINGS ─────────────────────────────────────────────────────────
+export interface OrgReview {
+  id: string;
+  project_id: string;
+  project_title?: string;
+  reviewer_org_id: string;
+  reviewer_org_name?: string;
+  reviewer_role: UserRole;
+  target_org_id: string;
+  target_org_name?: string;
+  target_role: UserRole;
+  rating: number; // 1 to 5
+  comment: string;
+  created_at: string;
+}
+
 // ─── PROFILES & ORGANIZATIONS ─────────────────────────────────────────────────
 
 export interface Profile {
@@ -101,6 +134,11 @@ export interface Organization {
   organization_type: OrganizationType;
   location?: string;
   phone?: string;
+  domain?: string;
+  registration_number?: string;
+  tax_id?: string;
+  kyc_status?: AccountStatus;
+  rejection_reason?: string;
   verification_status?: OrgVerificationStatus;
   created_at: string;
   updated_at: string;
@@ -181,6 +219,8 @@ export interface NGONeedAnalysis {
   csr_category: string;
   csr_eligibility_indicators: string[];
   missing_information: string[];
+  feasibility_score?: number;
+  ai_recommendations?: string;
   ai_powered: boolean;
   created_at: string;
 }
@@ -205,6 +245,12 @@ export interface CSRProject {
   corporate_organization_id?: string;
   selected_business_organization_id?: string;
   tender_id?: string;
+  target_quantity?: number;
+  target_unit?: string;
+  beneficiaries_impacted?: number;
+  problem_statement?: string;
+  target_type?: FulfillmentType;
+  proposed_timeline_days?: number;
   ai_need_analysis?: NGONeedAnalysis;
   created_at: string;
   updated_at: string;
@@ -214,6 +260,7 @@ export interface CSRProject {
   corporate_organization?: Organization;
   business_organization?: Organization;
   tender?: Tender;
+  payments?: Payment[];
 }
 
 // ─── TENDER ───────────────────────────────────────────────────────────────────
@@ -230,9 +277,16 @@ export interface Tender {
   unit: string;
   minimum_specifications: string;
   budget: number;
+  max_budget?: number;
+  target_quantity?: number;
+  target_unit?: string;
+  description?: string;
+  business_domain?: string;
+  selected_quotation_id?: string;
   delivery_location: string;
   deadline: string;
   delivery_timeline_days: number;
+  delivery_deadline_days?: number;
   payment_terms: string;
   additional_requirements?: string;
   open_date: string;
@@ -260,6 +314,10 @@ export interface TenderQuotation {
   capacity: string;
   experience: string;
   description: string;
+  relevant_experience_years?: number;
+  production_capacity?: string;
+  item_specifications?: string;
+  warranty_details?: string;
   warranty_guarantee?: string;
   terms?: string;
   status: QuotationStatus;
@@ -286,6 +344,7 @@ export interface QuotationEvaluation {
   verification_score: number;
   overall_score: number;
   recommendation: string;
+  ai_recommendation?: string;
   reasoning: string;
   ai_powered: boolean;
   created_at: string;

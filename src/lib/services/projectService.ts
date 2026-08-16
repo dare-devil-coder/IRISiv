@@ -19,6 +19,8 @@ import {
   QuotationEvaluation,
   OrgVerification,
   NGONeedAnalysis,
+  OrgReview,
+  AccountStatus,
 } from '@/types';
 import {
   INITIAL_PROJECTS,
@@ -39,6 +41,7 @@ import {
   INITIAL_ORG_VERIFICATIONS,
   INITIAL_NEED_ANALYSES,
   INITIAL_IMPACT_REPORTS,
+  INITIAL_REVIEWS,
 } from '@/lib/db/mockData';
 import { StateMachineService } from './stateMachineService';
 import { FeatherlessAIAdapter } from '@/lib/ai/featherlessAdapter';
@@ -65,6 +68,7 @@ class SystemStore {
   quotationEvaluations: QuotationEvaluation[] = [...INITIAL_QUOTATION_EVALUATIONS];
   orgVerifications: OrgVerification[] = [...INITIAL_ORG_VERIFICATIONS];
   needAnalyses: NGONeedAnalysis[] = [...INITIAL_NEED_ANALYSES];
+  orgReviews: OrgReview[] = [...INITIAL_REVIEWS];
 
   resetToDemoState() {
     this.projects = [...INITIAL_PROJECTS];
@@ -84,6 +88,8 @@ class SystemStore {
     this.quotationEvaluations = [...INITIAL_QUOTATION_EVALUATIONS];
     this.orgVerifications = [...INITIAL_ORG_VERIFICATIONS];
     this.needAnalyses = [...INITIAL_NEED_ANALYSES];
+    this.organizations = [...INITIAL_ORGANIZATIONS];
+    this.orgReviews = [...INITIAL_REVIEWS];
   }
 }
 
@@ -951,10 +957,6 @@ export class ProjectService {
     return store.auditLogs;
   }
 
-  static getOrganizations(): Organization[] {
-    return store.organizations;
-  }
-
   static getOrgVerification(orgId: string): OrgVerification | undefined {
     return store.orgVerifications.find((v) => v.organization_id === orgId);
   }
@@ -1085,6 +1087,157 @@ export class ProjectService {
       `Your proposal for ${rawProj.project_code} has been selected! Contract: ₹${proposal.bid_amount.toLocaleString()}.`);
 
     return this.attachJoinedOrganizations(rawProj);
+  }
+
+  // ─── REVIEWS & RATINGS ────────────────────────────────────────────────────────
+  static getReviews(filter?: { orgId?: string; role?: UserRole; projectId?: string }): OrgReview[] {
+    let list = store.orgReviews;
+    if (filter?.projectId) list = list.filter((r) => r.project_id === filter.projectId);
+    if (filter?.orgId) {
+      list = list.filter((r) => r.reviewer_org_id === filter.orgId || r.target_org_id === filter.orgId);
+    }
+    if (filter?.role) {
+      list = list.filter((r) => r.reviewer_role === filter.role || r.target_role === filter.role);
+    }
+    return list;
+  }
+
+  static createReview(data: {
+    projectId: string;
+    reviewerOrgId: string;
+    reviewerRole: UserRole;
+    targetOrgId: string;
+    targetRole: UserRole;
+    rating: number;
+    comment: string;
+  }): OrgReview {
+    const proj = store.projects.find((p) => p.id === data.projectId);
+    const reviewerOrg = store.organizations.find((o) => o.id === data.reviewerOrgId);
+    const targetOrg = store.organizations.find((o) => o.id === data.targetOrgId);
+
+    const newRev: OrgReview = {
+      id: `rev-${Date.now()}`,
+      project_id: data.projectId,
+      project_title: proj?.title || 'CSR Project',
+      reviewer_org_id: data.reviewerOrgId,
+      reviewer_org_name: reviewerOrg?.name || 'Organization',
+      reviewer_role: data.reviewerRole,
+      target_org_id: data.targetOrgId,
+      target_org_name: targetOrg?.name || 'Partner Organization',
+      target_role: data.targetRole,
+      rating: Math.max(1, Math.min(5, Math.round(data.rating))),
+      comment: data.comment,
+      created_at: new Date().toISOString(),
+    };
+
+    store.orgReviews.unshift(newRev);
+    this.logAudit(data.projectId, data.reviewerOrgId, data.reviewerRole, 'REVIEW_SUBMITTED', {
+      target_org: targetOrg?.name,
+      rating: newRev.rating,
+    });
+    return newRev;
+  }
+
+  // ─── COMPANY LOCK ────────────────────────────────────────────────────────────
+  static async lockProject(projectId: string, corpOrgId: string): Promise<CSRProject> {
+    const rawProj = await this.findRawProject(projectId);
+    if (!rawProj) throw new Error('Project not found');
+
+    StateMachineService.assertTransition(rawProj.status, 'CORPORATE_INTERESTED');
+    rawProj.corporate_organization_id = corpOrgId;
+    rawProj.status = 'CORPORATE_INTERESTED';
+    rawProj.updated_at = new Date().toISOString();
+
+    const corpOrg = store.organizations.find((o) => o.id === corpOrgId);
+    this.logAudit(rawProj.id, 'prof-corp-1', 'CORPORATE', 'PROJECT_LOCKED', {
+      corporate_name: corpOrg?.name || 'Corporate Sponsor',
+    });
+    this.notify(
+      'prof-ngo-1',
+      rawProj.id,
+      'PROJECT_LOCKED',
+      'Corporate Locked Your Project!',
+      `${corpOrg?.name || 'A corporate sponsor'} has locked ${rawProj.project_code} and is preparing the tender.`
+    );
+
+    return this.attachJoinedOrganizations(rawProj);
+  }
+
+  // ─── 40% MILESTONE PAYMENT ───────────────────────────────────────────────────
+  static async recordMilestonePayment(projectId: string): Promise<Payment> {
+    const rawProj = await this.findRawProject(projectId);
+    if (!rawProj) throw new Error('Project not found');
+
+    StateMachineService.assertTransition(rawProj.status, 'MILESTONE_40_PAID');
+    const contractVal = rawProj.contract_value || rawProj.estimated_budget;
+    const amount = Math.round(contractVal * 0.4);
+
+    const payment: Payment = {
+      id: `pay-milestone-${Date.now()}`,
+      project_id: rawProj.id,
+      contract_id: `contract-${rawProj.id}`,
+      payment_type: 'FULFILLMENT_40',
+      amount,
+      percentage: 40,
+      milestone_label: '40% Fulfillment Milestone Payment',
+      status: 'APPROVED',
+      trigger_condition: 'Vendor submitted fulfillment evidence & Corporate approved',
+      created_at: new Date().toISOString(),
+    };
+
+    store.payments.push(payment);
+    rawProj.status = 'MILESTONE_40_PAID';
+    rawProj.updated_at = new Date().toISOString();
+
+    this.logAudit(rawProj.id, 'prof-corp-1', 'CORPORATE', 'MILESTONE_40_PAYMENT_RELEASED', { amount });
+    this.notify(
+      'prof-biz-1',
+      rawProj.id,
+      'PAYMENT_RECORDED',
+      '40% Milestone Payment Released',
+      `Corporate released ₹${amount.toLocaleString()} for ${rawProj.project_code}. NGO notified for physical inspection.`
+    );
+    this.notify(
+      'prof-ngo-1',
+      rawProj.id,
+      'VERIFICATION_REQUIRED',
+      'Action Required: Physical Ground Verification',
+      `Please inspect goods/services received for ${rawProj.project_code} and submit your physical confirmation.`
+    );
+
+    return payment;
+  }
+
+  // ─── KYC MANAGEMENT (Admin) ──────────────────────────────────────────────────
+  static getOrganizations(kycStatus?: AccountStatus): Organization[] {
+    if (!kycStatus) return store.organizations;
+    return store.organizations.filter((o) => o.kyc_status === kycStatus);
+  }
+
+  static approveKYC(orgId: string): Organization {
+    const org = store.organizations.find((o) => o.id === orgId);
+    if (!org) throw new Error('Organization not found');
+
+    org.kyc_status = 'ACTIVE';
+    org.verification_status = 'VERIFIED';
+    org.rejection_reason = undefined;
+    org.updated_at = new Date().toISOString();
+
+    this.logAudit('system', 'prof-admin-1', 'ADMIN', 'KYC_APPROVED', { org_name: org.name, org_id: org.id });
+    return org;
+  }
+
+  static rejectKYC(orgId: string, reason: string): Organization {
+    const org = store.organizations.find((o) => o.id === orgId);
+    if (!org) throw new Error('Organization not found');
+
+    org.kyc_status = 'KYC_REJECTED';
+    org.verification_status = 'REJECTED';
+    org.rejection_reason = reason || 'KYC documentation insufficient';
+    org.updated_at = new Date().toISOString();
+
+    this.logAudit('system', 'prof-admin-1', 'ADMIN', 'KYC_REJECTED', { org_name: org.name, reason });
+    return org;
   }
 
   private static logAudit(projectId: string, actorId: string, role: UserRole, action: string, metadata: Record<string, unknown>) {

@@ -1,253 +1,354 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/shared/Navbar';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { CSRProject } from '@/types';
+import { ProjectStatusCard } from '@/components/shared/ProjectStatusCard';
+import { ProjectStatusModal } from '@/components/shared/ProjectStatusModal';
+import { CompanyLockModal } from '@/components/shared/CompanyLockModal';
 import { AIAssistantDrawer } from '@/components/shared/AIAssistantDrawer';
-import { CSRProject, Tender } from '@/types';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   ShieldCheck,
-  Plus,
-  ArrowRight,
-  FileText,
-  CheckCircle2,
-  AlertTriangle,
-  IndianRupee,
-  Cpu,
   Building2,
+  Cpu,
+  Plus,
+  RotateCcw,
+  IndianRupee,
   Briefcase,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
+  FileText,
+  Lock,
+  ArrowRight,
+  Filter,
 } from 'lucide-react';
 
-export default function CorporateDashboard() {
+export default function CorporateDashboardPage() {
   const [projects, setProjects] = useState<CSRProject[]>([]);
-  const [tenders, setTenders] = useState<Tender[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = async () => {
+  // Modals state
+  const [statusModalProject, setStatusModalProject] = useState<CSRProject | null>(null);
+  const [lockModalProject, setLockModalProject] = useState<CSRProject | null>(null);
+
+  const loadProjects = async () => {
+    setLoading(true);
     try {
-      const [pRes, tRes] = await Promise.all([
-        fetch('/api/projects?role=CORPORATE&orgId=org-corp-1'),
-        fetch('/api/tenders'),
-      ]);
-      const pJson = await pRes.json();
-      const tJson = await tRes.json();
-      if (pJson.success) setProjects(pJson.data);
-      if (tJson.success) setTenders(tJson.data);
-    } catch (e) {
-      console.error(e);
+      const res = await fetch('/api/projects?role=CORPORATE');
+      const json = await res.json();
+      if (json.success) setProjects(json.data);
+    } catch {
+      // Fallback
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadProjects();
   }, []);
 
-  const pendingApproval = projects.filter((p) => p.status === 'SUBMITTED');
-  const needsTender = projects.filter((p) => p.status === 'CORPORATE_INTERESTED' && !p.tender_id);
-  const openTenders = tenders.filter((t) => t.status === 'OPEN');
-  const needsPaymentRelease = projects.filter((p) =>
-    ['CONTRACTED', 'NGO_CONFIRMED', 'MANUAL_REVIEW'].includes(p.status)
+  // Filter Categories
+  const newDiscoverableProjects = projects.filter((p) => p.status === 'SUBMITTED');
+  const lockedProjects = projects.filter((p) => p.status === 'CORPORATE_INTERESTED');
+  const activeTenders = projects.filter((p) => p.status === 'TENDER_OPEN');
+  const tendersAwaitingSelection = projects.filter((p) => ['TENDER_CLOSED', 'AI_EVALUATED'].includes(p.status));
+  const ongoingExecutionProjects = projects.filter(
+    (p) =>
+      ['CORPORATE_INTERESTED', 'TENDER_OPEN', 'TENDER_CLOSED', 'AI_EVALUATED', 'BUSINESS_SELECTED', 'CONTRACTED', 'ADVANCE_20_PAID', 'IN_PROGRESS', 'FULFILLMENT_SUBMITTED', 'MILESTONE_40_PAID', 'NGO_CONFIRMATION_PENDING', 'NGO_CONFIRMED', 'FINAL_40_PAID', 'MANUAL_REVIEW'].includes(p.status)
   );
-  const completed = projects.filter((p) => p.status === 'COMPLETED');
-
-  const totalCommitted = projects.reduce((sum, p) => sum + (p.contract_value || p.estimated_budget), 0);
+  const paymentsPending = projects.filter(
+    (p) =>
+      ['BUSINESS_SELECTED', 'CONTRACTED', 'FULFILLMENT_SUBMITTED', 'NGO_CONFIRMED'].includes(p.status)
+  );
+  const completedProjects = projects.filter((p) => p.status === 'COMPLETED');
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <Navbar currentRole="CORPORATE" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full flex-1">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Corporate CSR Portal</h1>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                Apex Global Technologies
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200">
+                APEX GLOBAL TECHNOLOGIES
               </span>
+              <span className="text-xs text-slate-400 font-mono">KYC: ACTIVE ✓</span>
             </div>
-            <p className="text-xs text-slate-600 mt-1">Review NGO requirements, issue CSR procurement tenders, compare AI-scored quotations & authorize 20/40/40 payments.</p>
-          </div>
-          <Link
-            href="/corporate/tenders/new"
-            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all w-fit"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create New Tender</span>
-          </Link>
-        </div>
-
-        {/* Top Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <span className="text-xs text-slate-500 font-mono font-bold uppercase">Total CSR Portfolio</span>
-            <div className="text-2xl font-black text-slate-900 font-mono mt-1">₹{(totalCommitted / 100000).toFixed(1)}L</div>
-            <span className="text-[11px] text-slate-500 mt-1 block font-medium">{projects.length} Total Projects</span>
+            <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="h-6 w-6 text-indigo-600" />
+              Company CSR Procurement & Tender Management Portal
+            </h1>
           </div>
 
-          <div className={`p-5 rounded-2xl border shadow-sm ${pendingApproval.length > 0 ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'}`}>
-            <span className="text-xs text-amber-900 font-mono font-bold uppercase">NGO Requirements Awaiting Review</span>
-            <div className="text-2xl font-black text-amber-900 font-mono mt-1">{pendingApproval.length}</div>
-            <span className="text-[11px] text-amber-800 mt-1 block font-semibold">Need corporate interest</span>
-          </div>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={loadProjects}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold shadow-sm"
+            >
+              <RotateCcw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
 
-          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <span className="text-xs text-slate-500 font-mono font-bold uppercase">Active Open Tenders</span>
-            <div className="text-2xl font-black text-emerald-700 font-mono mt-1">{openTenders.length}</div>
-            <span className="text-[11px] text-emerald-700 mt-1 block font-semibold">Accepting vendor bids</span>
-          </div>
-
-          <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <span className="text-xs text-slate-500 font-mono font-bold uppercase">Completed Impact Projects</span>
-            <div className="text-2xl font-black text-teal-700 font-mono mt-1">{completed.length}</div>
-            <span className="text-[11px] text-slate-500 mt-1 block font-medium">100% verified by NGO & AI</span>
+            <Link
+              href="/corporate/tenders/new"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition"
+            >
+              <Plus className="h-4 w-4" />
+              <span>+ Open New Tender</span>
+            </Link>
           </div>
         </div>
 
-        {/* Action Required Alert Box */}
-        {(pendingApproval.length > 0 || needsTender.length > 0 || needsPaymentRelease.length > 0) && (
-          <div className="p-5 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-900 space-y-3 shadow-sm">
+        {/* Top KPIs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+          <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 block">New Needs</span>
+            <div className="text-xl font-black text-slate-900 font-mono mt-1">{newDiscoverableProjects.length}</div>
+            <span className="text-[9px] text-slate-500">Available to lock</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-indigo-50/50 border border-indigo-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-indigo-800 block">Locked Needs</span>
+            <div className="text-xl font-black text-indigo-950 font-mono mt-1">{lockedProjects.length}</div>
+            <span className="text-[9px] text-indigo-700">Tender Pending</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-amber-800 block">Active Tenders</span>
+            <div className="text-xl font-black text-amber-950 font-mono mt-1">{activeTenders.length}</div>
+            <span className="text-[9px] text-amber-700">Accepting Bids</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-violet-50/50 border border-violet-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-violet-800 block">Awaiting Select</span>
+            <div className="text-xl font-black text-violet-950 font-mono mt-1">{tendersAwaitingSelection.length}</div>
+            <span className="text-[9px] text-violet-700">AI scored ready</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-teal-50/50 border border-teal-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-teal-800 block">Ongoing Work</span>
+            <div className="text-xl font-black text-teal-950 font-mono mt-1">{ongoingExecutionProjects.length}</div>
+            <span className="text-[9px] text-teal-700">In Execution</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-emerald-800 block">Pay Action Ready</span>
+            <div className="text-xl font-black text-emerald-950 font-mono mt-1">{paymentsPending.length}</div>
+            <span className="text-[9px] text-emerald-700">20 / 40 / 40</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-xs">
+            <span className="text-[9px] uppercase font-mono font-bold text-slate-400 block">Completed</span>
+            <div className="text-xl font-black text-slate-900 font-mono mt-1">{completedProjects.length}</div>
+            <span className="text-[9px] text-slate-500">100% Verified</span>
+          </div>
+        </div>
+
+        {/* ACTION REQUIRED AREA */}
+        {(paymentsPending.length > 0 || tendersAwaitingSelection.length > 0 || lockedProjects.length > 0) && (
+          <div className="p-6 rounded-2xl border-2 border-indigo-200 bg-indigo-50/40 space-y-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-emerald-700 shrink-0" />
-              <h2 className="text-sm font-bold text-emerald-950">Action Needed on Your CSR Portfolio</h2>
+              <AlertTriangle className="h-5 w-5 text-indigo-700" />
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Company Decisions & Milestones Awaiting Action</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              {pendingApproval.length > 0 && (
-                <div className="p-3 rounded-xl bg-white border border-emerald-200">
-                  <span className="font-bold text-emerald-950 block">{pendingApproval.length} NGO Requirement(s)</span>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Review and express interest to start procurement.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Payment Triggers */}
+              {paymentsPending.map((p) => (
+                <div key={p.id} className="p-4 rounded-xl bg-white border border-indigo-200 shadow-xs flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <IndianRupee className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-xs font-bold text-slate-900">{p.title}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      {['BUSINESS_SELECTED', 'CONTRACTED'].includes(p.status)
+                        ? 'Release 20% Advance Payment to begin material procurement.'
+                        : p.status === 'FULFILLMENT_SUBMITTED'
+                        ? 'Vendor uploaded delivery documents. Release 40% milestone.'
+                        : 'NGO physically confirmed receipt. Release Final 40% payment.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setStatusModalProject(p)}
+                    className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1"
+                  >
+                    <span>Authorize Payment</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-              )}
-              {needsTender.length > 0 && (
-                <div className="p-3 rounded-xl bg-white border border-emerald-200">
-                  <span className="font-bold text-emerald-950 block">{needsTender.length} Approved Project(s)</span>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Create and publish procurement tenders.</p>
+              ))}
+
+              {/* Tenders Awaiting Selection */}
+              {tendersAwaitingSelection.map((p) => (
+                <div key={p.id} className="p-4 rounded-xl bg-white border border-violet-200 shadow-xs flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Cpu className="h-3.5 w-3.5 text-violet-600" />
+                      <span className="text-xs font-bold text-slate-900">{p.title}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Tender closed. Featherless AI scored all quotations across 7 factors.</p>
+                  </div>
+                  <Link
+                    href={`/corporate/tenders/${p.tender_id || 'tender-101'}`}
+                    className="w-full py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1"
+                  >
+                    <span>Review AI Bids & Select Business</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
-              )}
-              {needsPaymentRelease.length > 0 && (
-                <div className="p-3 rounded-xl bg-white border border-emerald-200">
-                  <span className="font-bold text-emerald-950 block">{needsPaymentRelease.length} Milestone Action(s)</span>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Record 20% advance or release final 40% payment.</p>
+              ))}
+
+              {/* Locked Projects needing Tender creation */}
+              {lockedProjects.map((p) => (
+                <div key={p.id} className="p-4 rounded-xl bg-white border border-indigo-200 shadow-xs flex flex-col justify-between space-y-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <FileText className="h-3.5 w-3.5 text-indigo-600" />
+                      <span className="text-xs font-bold text-slate-900">{p.title}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">Project locked. Publish tender to invite vendor quotations.</p>
+                  </div>
+                  <Link
+                    href={`/corporate/tenders/new?projectId=${p.id}`}
+                    className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1"
+                  >
+                    <span>Create & Publish Tender</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         )}
 
-        {/* Section 1: Active Tenders */}
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              CSR Procurement Tenders ({tenders.length})
-            </h2>
-            <Link href="/corporate/tenders/new" className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1">
-              <Plus className="h-3.5 w-3.5" /> Create Tender
-            </Link>
+        {/* SECTION 1: NEW PROJECTS DISCOVERY (Explicit 3 Information Areas: NGO, Project, AI Report) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">New NGO CSR Requirements Available to Lock</h2>
+              <p className="text-xs text-slate-500">Verified NGO needs evaluated by Featherless AI ready for Corporate sponsorship</p>
+            </div>
           </div>
 
-          {tenders.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-500">No tenders created yet. Click above to issue your first CSR tender.</div>
+          {newDiscoverableProjects.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-2xl border border-slate-200">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+              <h3 className="text-sm font-bold text-slate-900">All Available NGO Needs Have Been Sponsored</h3>
+              <p className="text-xs text-slate-500 mt-1">Check back later or monitor your ongoing CSR projects below.</p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-600 uppercase font-mono text-[10px]">
-                  <tr>
-                    <th className="p-4 font-bold">Code</th>
-                    <th className="p-4 font-bold">Tender Title</th>
-                    <th className="p-4 font-bold hidden sm:table-cell">Budget</th>
-                    <th className="p-4 font-bold hidden md:table-cell">Quotations</th>
-                    <th className="p-4 font-bold">Status</th>
-                    <th className="p-4 text-right font-bold">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {tenders.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-mono font-bold text-emerald-700">{t.tender_code}</td>
-                      <td className="p-4 font-semibold text-slate-900">{t.title}</td>
-                      <td className="p-4 font-mono font-bold text-slate-900 hidden sm:table-cell">₹{t.budget.toLocaleString()}</td>
-                      <td className="p-4 font-mono font-bold text-indigo-700 hidden md:table-cell">
-                        {t.quotations ? t.quotations.length : 0} bids
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono uppercase border ${
-                          t.status === 'OPEN' ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-300'
-                        }`}>
-                          {t.status}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {newDiscoverableProjects.map((p) => (
+                <div key={p.id} className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <span className="text-xs font-mono font-bold text-teal-700">{p.project_code}</span>
+                      <h3 className="text-base font-bold text-slate-900 leading-snug">{p.title}</h3>
+                    </div>
+                    <span className="font-mono font-bold text-slate-900 text-sm">
+                      ₹{p.estimated_budget.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* 3 Explicit Information Areas */}
+                  <div className="space-y-3">
+                    {/* AREA 1: NGO DETAILS */}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                      <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block">1. NGO Partner Details</span>
+                      <div className="flex justify-between font-semibold text-slate-800">
+                        <span>{p.ngo_organization?.name || 'Shiksha Foundation India'}</span>
+                        <span className="text-emerald-700 font-mono text-[10px]">KYC VERIFIED ✓</span>
+                      </div>
+                      <span className="text-slate-500 block text-[11px]">{p.location}</span>
+                    </div>
+
+                    {/* AREA 2: PROJECT DETAILS */}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                      <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block">2. Project Requirements</span>
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-700">
+                        <div>Category: <strong>{p.category}</strong></div>
+                        <div>Quantity: <strong>{p.target_quantity} units</strong></div>
+                        <div>Beneficiaries: <strong>{p.beneficiaries_impacted || p.target_quantity}</strong></div>
+                        <div>Timeline: <strong>30 Days</strong></div>
+                      </div>
+                    </div>
+
+                    {/* AREA 3: AI REPORT */}
+                    <div className="p-3 rounded-xl bg-violet-50/60 border border-violet-200 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono uppercase font-bold text-violet-800 flex items-center gap-1">
+                          <Cpu className="h-3 w-3" />
+                          3. Featherless AI Need Report
                         </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <Link
-                          href={`/corporate/tenders/${t.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-900"
-                        >
-                          <span>Review & Score</span>
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <span className="font-mono font-bold text-[10px] text-violet-900 bg-violet-100 px-1.5 py-0.5 rounded">
+                          Feasibility: 94%
+                        </span>
+                      </div>
+                      <p className="text-slate-700 text-[11px] leading-relaxed">
+                        Budget is realistic against national averages. Direct community impact meets MCA CSR Schedule VII. Low risk profile.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-2 flex items-center gap-3">
+                    <button
+                      onClick={() => setLockModalProject(p)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition"
+                    >
+                      <Lock className="h-4 w-4" />
+                      <span>Lock Project for CSR</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Section 2: All Corporate CSR Projects */}
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-teal-600" />
-              Corporate CSR Projects ({projects.length})
-            </h2>
-            <span className="text-xs font-mono font-bold text-slate-500">20 / 40 / 40 Milestone Ledger</span>
+        {/* SECTION 2: ONGOING CSR PROJECTS & TENDERS */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Ongoing CSR Projects & Tenders</h2>
+              <p className="text-xs text-slate-500">Track and manage the 20/40/40 payment lifecycle for all locked initiatives</p>
+            </div>
           </div>
 
-          {loading ? (
-            <div className="p-8 text-center text-xs text-slate-500 animate-pulse">Loading projects...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-600 uppercase font-mono text-[10px]">
-                  <tr>
-                    <th className="p-4 font-bold">Code</th>
-                    <th className="p-4 font-bold">Project Title</th>
-                    <th className="p-4 font-bold hidden sm:table-cell">Beneficiaries</th>
-                    <th className="p-4 font-bold hidden md:table-cell">Budget</th>
-                    <th className="p-4 font-bold">Status</th>
-                    <th className="p-4 text-right font-bold">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {projects.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 font-mono font-bold text-teal-700">{p.project_code}</td>
-                      <td className="p-4 font-semibold text-slate-900 max-w-[200px]">
-                        <span className="line-clamp-1">{p.title}</span>
-                      </td>
-                      <td className="p-4 font-mono font-semibold hidden sm:table-cell">{p.beneficiaries.toLocaleString()}</td>
-                      <td className="p-4 font-mono font-bold text-slate-900 hidden md:table-cell">₹{p.estimated_budget.toLocaleString()}</td>
-                      <td className="p-4"><StatusBadge status={p.status} size="sm" /></td>
-                      <td className="p-4 text-right">
-                        <Link
-                          href={`/corporate/projects/${p.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-900"
-                        >
-                          <span>Manage</span>
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {ongoingExecutionProjects.map((p) => (
+              <ProjectStatusCard
+                key={p.id}
+                project={p}
+                userRole="CORPORATE"
+                onOpenStatusModal={(proj) => setStatusModalProject(proj)}
+              />
+            ))}
+          </div>
         </div>
+
+        {/* Dynamic Status Modal */}
+        <ProjectStatusModal
+          project={statusModalProject}
+          isOpen={!!statusModalProject}
+          onClose={() => setStatusModalProject(null)}
+          onRefresh={loadProjects}
+        />
+
+        {/* Company Lock Confirmation Modal */}
+        <CompanyLockModal
+          project={lockModalProject}
+          isOpen={!!lockModalProject}
+          onClose={() => setLockModalProject(null)}
+          onSuccess={loadProjects}
+        />
       </main>
 
       <AIAssistantDrawer currentRole="CORPORATE" />

@@ -59,10 +59,25 @@ export default function CorporateProjectDetailPage({ params }: { params: Promise
     loadData();
   }, [id]);
 
+  const [releasingMilestone, setReleasingMilestone] = useState(false);
+
+  const handleReleaseMilestone = async () => {
+    setReleasingMilestone(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/payment/milestone`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) await loadData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReleasingMilestone(false);
+    }
+  };
+
   const handleExpressInterest = async () => {
     setExpressingInterest(true);
     try {
-      const res = await fetch(`/api/projects/${id}/approve`, {
+      const res = await fetch(`/api/projects/${id}/lock`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ corporate_organization_id: 'org-corp-1' }),
@@ -152,7 +167,7 @@ export default function CorporateProjectDetailPage({ params }: { params: Promise
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition"
                 >
                   {expressingInterest ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  Express Interest & Create Tender
+                  <span>Lock Project for CSR</span>
                 </button>
               )}
 
@@ -174,6 +189,17 @@ export default function CorporateProjectDetailPage({ params }: { params: Promise
                 >
                   {recordingAdvance ? <Loader2 className="h-4 w-4 animate-spin" /> : <IndianRupee className="h-4 w-4" />}
                   Record 20% Advance Payment (₹{Math.round(contractVal * 0.2).toLocaleString()})
+                </button>
+              )}
+
+              {project.status === 'FULFILLMENT_SUBMITTED' && (
+                <button
+                  onClick={handleReleaseMilestone}
+                  disabled={releasingMilestone}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition"
+                >
+                  {releasingMilestone ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackageCheck className="h-4 w-4" />}
+                  Release 40% Milestone Payment (₹{Math.round(contractVal * 0.4).toLocaleString()})
                 </button>
               )}
 
