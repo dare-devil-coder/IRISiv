@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProjectService } from '@/lib/services/projectService';
+import { requireRole } from '@/lib/middleware/auth';
+import { Logger } from '@/lib/utils/logger';
 
-export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await requireRole(request, ['CORPORATE']);
     const { id } = await params;
-    const payment = await ProjectService.recordAdvancePayment(id);
+    const body = await request.json().catch(() => ({}));
+    const idempotencyKey = body.idempotency_key || body.idempotencyKey;
+    const payment = await ProjectService.recordAdvancePayment(id, undefined, idempotencyKey);
+    Logger.info('Recorded 20% advance payment', { projectId: id, amount: payment.amount, idempotencyKey });
     return NextResponse.json({ success: true, data: payment });
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const statusCode = message.includes('Cannot') ? 400 : 500;
+    Logger.error('Failed to record advance payment', undefined, error);
+    const statusCode = message.includes('Cannot') || message.includes('FORBIDDEN') ? 400 : 500;
     return NextResponse.json({ success: false, error: { message } }, { status: statusCode });
   }
 }

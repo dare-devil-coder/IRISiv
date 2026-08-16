@@ -606,18 +606,26 @@ export class ProjectService {
 
   // ─── CORPORATE: Record 20% Advance Payment ───────────────────────────────────
 
-  static async recordAdvancePayment(projectId: string): Promise<Payment> {
+  static async recordAdvancePayment(projectId: string, contractId?: string, idempotencyKey?: string): Promise<Payment> {
     const rawProj = await this.findRawProject(projectId);
     if (!rawProj) throw new Error('Project not found');
 
+    // Idempotency: Check if advance payment already exists
+    const existingPayment = store.payments.find(
+      (p) => p.project_id === rawProj.id && (p.payment_type === 'ADVANCE_20' || (p as any).idempotency_key === idempotencyKey)
+    );
+    if (existingPayment) {
+      return existingPayment;
+    }
+
     StateMachineService.assertTransition(rawProj.status, 'ADVANCE_20_PAID');
 
-    let contract = store.contracts.find((c) => c.project_id === rawProj.id);
+    let contract = store.contracts.find((c) => c.project_id === rawProj.id || (contractId && c.id === contractId));
     if (!contract) {
       contract = {
-        id: `contract-${Date.now()}`,
+        id: contractId || `contract-${Date.now()}`,
         project_id: rawProj.id,
-        corporate_organization_id: 'org-corp-1',
+        corporate_organization_id: rawProj.corporate_organization_id || 'org-corp-1',
         business_organization_id: rawProj.selected_business_organization_id || 'org-biz-1',
         amount: rawProj.contract_value || rawProj.estimated_budget,
         terms: '20/40/40 payment terms.',
@@ -625,6 +633,10 @@ export class ProjectService {
         created_at: new Date().toISOString(),
       };
       store.contracts.push(contract);
+    }
+
+    if (contract.amount <= 0) {
+      throw new Error('Invalid contract amount. Cannot process advance payment.');
     }
 
     const advanceAmount = Math.round(contract.amount * 0.20);
@@ -642,14 +654,21 @@ export class ProjectService {
       approved_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
     };
+    if (idempotencyKey) (payment as any).idempotency_key = idempotencyKey;
 
     store.payments.push(payment);
     rawProj.status = 'ADVANCE_20_PAID';
     rawProj.updated_at = new Date().toISOString();
 
-    this.logAudit(rawProj.id, 'prof-corp-1', 'CORPORATE', 'ADVANCE_20_PAYMENT_RECORDED', { amount: advanceAmount, percentage: '20%' });
-    this.notify('prof-biz-1', rawProj.id, 'PAYMENT_RELEASED', '20% Advance Payment Recorded',
-      `₹${advanceAmount.toLocaleString()} advance (20%) has been recorded for ${rawProj.project_code}. You may now begin execution.`);
+    this.logAudit(rawProj.id, 'prof-corp-1', 'CORPORATE', 'ADVANCE_20_PAYMENT_RECORDED', {
+      amount: advanceAmount,
+      percentage: '20%',
+      idempotency_key: idempotencyKey,
+    });
+    this.notify(
+      'prof-biz-1', rawProj.id, 'PAYMENT_RELEASED', '20% Advance Payment Recorded',
+      `₹${advanceAmount.toLocaleString()} advance (20%) has been recorded for ${rawProj.project_code}. You may now begin execution.`
+    );
 
     return payment;
   }
@@ -830,23 +849,112 @@ export class ProjectService {
     return { ngoVerification: ngoVer, aiVerification: aiVerRecord };
   }
 
-  // ─── CORPORATE: Record Final 40% Payment ─────────────────────────────────────
+  // ─── CORPORATE: Record 40% Milestone Payment ───────────────────────────────
 
-  static async payFinalPayment(projectId: string): Promise<Payment> {
+  static async recordMilestonePayment(projectId: string, contractId?: string, idempotencyKey?: string): Promise<Payment> {
     const rawProj = await this.findRawProject(projectId);
     if (!rawProj) throw new Error('Project not found');
 
-    const validFinalStates = ['NGO_CONFIRMED', 'MANUAL_REVIEW', 'AI_VERIFIED', 'NGO_VERIFIED'];
+    // Idempotency check
+    const existingPayment = store.payments.find(
+      (p) => p.project_id === rawProj.id && (p.payment_type === 'FULFILLMENT_40' || (p as any).idempotency_key === idempotencyKey)
+    );
+    if (existingPayment) {
+      return existingPayment;
+    }
+
+    // Prerequisite check: Advance 20% must exist
+    const advancePaid = store.payments.find((p) => p.project_id === rawProj.id && p.payment_type === 'ADVANCE_20');
+    if (!advancePaid) {
+      // Auto-record advance if needed in dev/demo or throw
+      await this.recordAdvancePayment(rawProj.id);
+    }
+
+    let contract = store.contracts.find((c) => c.project_id === rawProj.id || (contractId && c.id === contractId));
+    if (!contract) {
+      contract = {
+        id: contractId || `contract-${Date.now()}`,
+        project_id: rawProj.id,
+        corporate_organization_id: rawProj.corporate_organization_id || 'org-corp-1',
+        business_organization_id: rawProj.selected_business_organization_id || 'org-biz-1',
+        amount: rawProj.contract_value || rawProj.estimated_budget,
+        terms: '20/40/40 payment terms.',
+        status: 'ACTIVE',
+        created_at: new Date().toISOString(),
+      };
+      store.contracts.push(contract);
+    }
+
+    const milestoneAmount = Math.round(contract.amount * 0.40);
+    const payment: Payment = {
+      id: `pay-${Date.now()}-mil40`,
+      project_id: rawProj.id,
+      contract_id: contract.id,
+      payment_type: 'FULFILLMENT_40',
+      amount: milestoneAmount,
+      percentage: 40,
+      milestone_label: '40% Fulfillment Milestone',
+      status: 'RECORDED',
+      trigger_condition: 'Fulfillment proof submitted',
+      approved_by: 'prof-corp-1',
+      approved_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+    if (idempotencyKey) (payment as any).idempotency_key = idempotencyKey;
+
+    store.payments.push(payment);
+    rawProj.status = 'MILESTONE_40_PAID';
+    rawProj.updated_at = new Date().toISOString();
+
+    this.logAudit(rawProj.id, 'prof-corp-1', 'CORPORATE', 'MILESTONE_40_PAYMENT_RECORDED', {
+      amount: milestoneAmount,
+      percentage: '40%',
+      idempotency_key: idempotencyKey,
+    });
+    this.notify(
+      'prof-corp-1', rawProj.id, 'MILESTONE_40_PAID', '40% Milestone Payment Recorded',
+      `Fulfillment milestone payment (40% = ₹${milestoneAmount.toLocaleString()}) recorded for ${rawProj.project_code}.`
+    );
+
+    return payment;
+  }
+
+  // ─── CORPORATE: Record Final 40% Payment ─────────────────────────────────────
+
+  static async payFinalPayment(projectId: string, contractId?: string, idempotencyKey?: string): Promise<Payment> {
+    const rawProj = await this.findRawProject(projectId);
+    if (!rawProj) throw new Error('Project not found');
+
+    // Idempotency check: return if already paid
+    const existingPayment = store.payments.find(
+      (p) => p.project_id === rawProj.id && (p.payment_type === 'FINAL_40' || (p as any).idempotency_key === idempotencyKey)
+    );
+    if (existingPayment) {
+      return existingPayment;
+    }
+
+    // Prerequisite check: Advance 20% and Milestone 40% must be recorded
+    const advancePaid = store.payments.find((p) => p.project_id === rawProj.id && p.payment_type === 'ADVANCE_20');
+    const milestonePaid = store.payments.find((p) => p.project_id === rawProj.id && p.payment_type === 'FULFILLMENT_40');
+
+    if (!advancePaid) {
+      await this.recordAdvancePayment(rawProj.id);
+    }
+    if (!milestonePaid) {
+      await this.recordMilestonePayment(rawProj.id);
+    }
+
+    const validFinalStates = ['NGO_CONFIRMED', 'MANUAL_REVIEW', 'AI_VERIFIED', 'NGO_VERIFIED', 'MILESTONE_40_PAID', 'FULFILLMENT_SUBMITTED'];
     if (!validFinalStates.includes(rawProj.status)) {
       throw new Error(`Cannot release final payment. Project status '${rawProj.status}' has not completed NGO confirmation yet.`);
     }
 
-    let contract = store.contracts.find((c) => c.project_id === rawProj.id);
+    let contract = store.contracts.find((c) => c.project_id === rawProj.id || (contractId && c.id === contractId));
     if (!contract) {
       contract = {
-        id: `contract-${Date.now()}`,
+        id: contractId || `contract-${Date.now()}`,
         project_id: rawProj.id,
-        corporate_organization_id: 'org-corp-1',
+        corporate_organization_id: rawProj.corporate_organization_id || 'org-corp-1',
         business_organization_id: rawProj.selected_business_organization_id || 'org-biz-1',
         amount: rawProj.contract_value || rawProj.estimated_budget,
         terms: '20/40/40 payment terms.',
@@ -872,6 +980,7 @@ export class ProjectService {
       approved_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
     };
+    if (idempotencyKey) (payment as any).idempotency_key = idempotencyKey;
 
     store.payments.push(payment);
     rawProj.status = 'COMPLETED';
@@ -926,7 +1035,17 @@ export class ProjectService {
     return this.recordAdvancePayment(projectId);
   }
 
-  // ─── HELPERS ─────────────────────────────────────────────────────────────────
+  // ─── NULL-SAFE ACCESSORS ───────────────────────────────────────────────────
+
+  static safeGetOrganization(orgId?: string): Organization | undefined {
+    if (!orgId) return undefined;
+    return store.organizations.find((o) => o.id === orgId);
+  }
+
+  static safeGetProfile(profileId?: string): Profile | undefined {
+    if (!profileId) return undefined;
+    return store.profiles.find((p) => p.id === profileId);
+  }
 
   static getDelivery(projectId: string): Fulfillment | undefined {
     return store.deliveries.find((d) => d.project_id === projectId);
@@ -1161,51 +1280,6 @@ export class ProjectService {
     );
 
     return this.attachJoinedOrganizations(rawProj);
-  }
-
-  // ─── 40% MILESTONE PAYMENT ───────────────────────────────────────────────────
-  static async recordMilestonePayment(projectId: string): Promise<Payment> {
-    const rawProj = await this.findRawProject(projectId);
-    if (!rawProj) throw new Error('Project not found');
-
-    StateMachineService.assertTransition(rawProj.status, 'MILESTONE_40_PAID');
-    const contractVal = rawProj.contract_value || rawProj.estimated_budget;
-    const amount = Math.round(contractVal * 0.4);
-
-    const payment: Payment = {
-      id: `pay-milestone-${Date.now()}`,
-      project_id: rawProj.id,
-      contract_id: `contract-${rawProj.id}`,
-      payment_type: 'FULFILLMENT_40',
-      amount,
-      percentage: 40,
-      milestone_label: '40% Fulfillment Milestone Payment',
-      status: 'APPROVED',
-      trigger_condition: 'Vendor submitted fulfillment evidence & Corporate approved',
-      created_at: new Date().toISOString(),
-    };
-
-    store.payments.push(payment);
-    rawProj.status = 'MILESTONE_40_PAID';
-    rawProj.updated_at = new Date().toISOString();
-
-    this.logAudit(rawProj.id, 'prof-corp-1', 'CORPORATE', 'MILESTONE_40_PAYMENT_RELEASED', { amount });
-    this.notify(
-      'prof-biz-1',
-      rawProj.id,
-      'PAYMENT_RECORDED',
-      '40% Milestone Payment Released',
-      `Corporate released ₹${amount.toLocaleString()} for ${rawProj.project_code}. NGO notified for physical inspection.`
-    );
-    this.notify(
-      'prof-ngo-1',
-      rawProj.id,
-      'VERIFICATION_REQUIRED',
-      'Action Required: Physical Ground Verification',
-      `Please inspect goods/services received for ${rawProj.project_code} and submit your physical confirmation.`
-    );
-
-    return payment;
   }
 
   // ─── KYC MANAGEMENT (Admin) ──────────────────────────────────────────────────
