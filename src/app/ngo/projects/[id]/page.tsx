@@ -58,9 +58,10 @@ export default function NGOProjectDetailPage() {
 
       if (pRes && pRes.ok) {
         const pJson = await pRes.json();
-        if (pJson.success) {
-          setProject(pJson.data);
-          setReceivedQuantity(pJson.data.target_quantity || 500);
+        if (pJson.success && pJson.data) {
+          const proj = pJson.data.project || pJson.data;
+          setProject(proj);
+          setReceivedQuantity(proj.target_quantity || 500);
         }
       }
       if (aRes && aRes.ok) {

@@ -47,9 +47,10 @@ export default function BusinessFulfillmentPage() {
     fetch(`/api/projects/${id}`)
       .then((res) => res.json())
       .then((json) => {
-        if (json.success) {
-          setProject(json.data);
-          setQuantityDelivered(String(json.data.target_quantity || 500));
+        if (json.success && json.data) {
+          const proj = json.data.project || json.data;
+          setProject(proj);
+          setQuantityDelivered(String(proj.target_quantity || 500));
         }
       })
       .finally(() => setLoading(false));

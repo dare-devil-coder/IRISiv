@@ -41,8 +41,9 @@ export default function CorporateProjectDetailPage({ params }: { params: Promise
     try {
       const res = await fetch(`/api/projects/${id}`);
       const json = await res.json();
-      if (json.success) {
-        setProject(json.data);
+      if (json.success && json.data) {
+        const proj = json.data.project || json.data;
+        setProject(proj);
         if (json.data.delivery) setDelivery(json.data.delivery);
         if (json.data.ngoVerification) setNGOVerification(json.data.ngoVerification);
         if (json.data.aiVerification) setAIVerification(json.data.aiVerification);
