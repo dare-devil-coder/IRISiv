@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/shared/Navbar';
 import { AccountStatus } from '@/types';
@@ -15,7 +15,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
-export default function AccountStatusPage() {
+function AccountStatusContent() {
   const [accountState, setAccountState] = useState<AccountStatus>('KYC_PENDING');
 
   return (
@@ -135,5 +135,13 @@ export default function AccountStatusPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AccountStatusPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-xs text-slate-500">Loading account status...</div>}>
+      <AccountStatusContent />
+    </Suspense>
   );
 }

@@ -64,33 +64,44 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole = 'LANDING', onRoleC
       case 'NGO':
         return [
           { href: '/ngo/dashboard', label: 'Dashboard' },
-          { href: '/ngo/requirements/new', label: '+ Create Requirement' },
-          { href: '/ngo/status', label: 'Lifecycle Status' },
+          { href: '/ngo/requirements/new', label: 'Requirements' },
+          { href: '/ngo/dashboard#projects', label: 'Projects' },
+          { href: '/ngo/status', label: 'Status' },
           { href: '/ngo/reviews', label: 'Reviews' },
           { href: '/ngo/notifications', label: 'Notifications' },
-          { href: '/auth/status', label: 'KYC Profile' },
+          { href: '/auth/status', label: 'Profile / KYC' },
         ];
       case 'CORPORATE':
         return [
           { href: '/corporate/dashboard', label: 'Dashboard' },
-          { href: '/corporate/tenders/new', label: '+ Open Tender' },
-          { href: '/corporate/status', label: 'Project Status' },
+          { href: '/corporate/dashboard#new-projects', label: 'New Projects' },
+          { href: '/corporate/dashboard#ongoing-projects', label: 'Ongoing Projects' },
+          { href: '/corporate/dashboard#completed-projects', label: 'Completed Projects' },
+          { href: '/corporate/status', label: 'Status' },
           { href: '/corporate/reviews', label: 'Reviews' },
           { href: '/corporate/notifications', label: 'Notifications' },
-          { href: '/auth/status', label: 'KYC Profile' },
+          { href: '/auth/status', label: 'Profile / KYC' },
         ];
       case 'BUSINESS':
         return [
           { href: '/business/dashboard', label: 'Dashboard' },
-          { href: '/business/status', label: 'My Tenders Status' },
+          { href: '/business/dashboard#available-tenders', label: 'Available Tenders' },
+          { href: '/business/dashboard#my-tenders', label: 'My Tenders' },
+          { href: '/business/status', label: 'Status' },
           { href: '/business/reviews', label: 'Reviews' },
           { href: '/business/notifications', label: 'Notifications' },
-          { href: '/auth/status', label: 'KYC Profile' },
+          { href: '/auth/status', label: 'Profile / KYC' },
         ];
       case 'ADMIN':
         return [
-          { href: '/admin/dashboard', label: 'Dashboard & KYC' },
-          { href: '/auth/status', label: 'System Profiles' },
+          { href: '/admin/dashboard', label: 'Dashboard' },
+          { href: '/admin/dashboard#kyc', label: 'KYC Applications' },
+          { href: '/admin/dashboard#users', label: 'Users' },
+          { href: '/admin/dashboard#ngos', label: 'NGOs' },
+          { href: '/admin/dashboard#companies', label: 'Companies' },
+          { href: '/admin/dashboard#businesses', label: 'Businesses' },
+          { href: '/admin/dashboard#projects', label: 'Projects' },
+          { href: '/admin/dashboard#tenders', label: 'Tenders' },
         ];
       default:
         return [
@@ -98,6 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole = 'LANDING', onRoleC
           { href: '#for-ngos', label: 'For NGOs' },
           { href: '#for-companies', label: 'For Companies' },
           { href: '#for-businesses', label: 'For Businesses' },
+          { href: '#about-us', label: 'About Us' },
           { href: '/auth/login', label: 'Login' },
           { href: '/auth/signup', label: 'Sign Up' },
         ];

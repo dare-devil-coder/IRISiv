@@ -326,6 +326,28 @@ export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
               </div>
             )}
 
+            {/* Exception Stage: Manual Review / Issue Detected */}
+            {['MANUAL_REVIEW', 'DISPUTED'].includes(project.status) && (
+              <div className="space-y-3 p-4 rounded-xl bg-rose-50 border border-rose-300">
+                <div className="flex items-center gap-2 text-rose-800">
+                  <AlertTriangle className="h-5 w-5 text-rose-600" />
+                  <h3 className="text-sm font-bold">ISSUE DETECTED — Manual Discrepancy Review Required</h3>
+                </div>
+                <p className="text-xs text-rose-700 leading-relaxed">
+                  NGO flagged a physical delivery shortfall or quality discrepancy (e.g. 950 / 1000 items delivered — 95% fulfillment). Final payment is held in escrow until rectified.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleReleaseFinal40}
+                    disabled={actionLoading}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5"
+                  >
+                    <span>Authorize Adjusted Payout</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Stage I: Completed & Impact Certified */}
             {project.status === 'COMPLETED' && (
               <div className="space-y-3">

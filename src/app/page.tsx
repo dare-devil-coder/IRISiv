@@ -273,6 +273,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* About Us Section */}
+      <section id="about-us" className="py-16 bg-slate-50 border-b border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+          <span className="text-xs font-mono uppercase font-bold text-teal-700">About IRISiv</span>
+          <h2 className="text-3xl font-black text-slate-900">Transforming CSR Through Deterministic Verifiability</h2>
+          <p className="text-xs text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            IRISiv is a next-generation corporate social responsibility procurement and governance network. We replace opaque intermediary chains with an AI-structured lifecycle, blind competitive vendor tenders, milestone escrow releases, and mandatory ground verification.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/auth/signup"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition"
+            >
+              <span>Get Started with IRISiv</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <footer className="mt-auto border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
         <p>© 2026 IRISiv — Transparent CSR Procurement & Verifiable Impact Platform</p>
       </footer>
