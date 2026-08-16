@@ -144,6 +144,7 @@ export interface Organization {
   kyc_status?: AccountStatus;
   rejection_reason?: string;
   verification_status?: OrgVerificationStatus;
+  trust_score?: number;
   created_at: string;
   updated_at: string;
 }

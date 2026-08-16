@@ -49,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole = 'LANDING', onRoleC
   const handleResetDemo = async () => {
     setResetting(true);
     try {
-      await fetch('/api/demo/reset', { method: 'POST' });
+      await fetch('/api/admin/reset', { method: 'POST' });
       window.location.reload();
     } catch {
       alert('Failed to reset demo state.');
